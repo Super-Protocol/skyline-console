@@ -110,6 +110,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.identity.outputs.tag }}
         run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/console-$TAG" -f "sha=$GITHUB_SHA"
           gh release create "console-$TAG" "$RUNNER_TEMP"/console-release/* \
-            --target "$GITHUB_SHA" --title "Super Protocol console $TAG" --prerelease \
+            --verify-tag --title "Super Protocol console $TAG" --prerelease \
             --notes 'Source-built console component. Not a complete offline OpenStack kit. SHA256 is an integrity check, not a signature or guest attestation.'
