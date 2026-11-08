@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "upstream_source": "9b839364f58a849e0a7d8e9b5b7c73a564b65cc3",
+  "component_version": "9.0.0-sp1",
+  "kolla_revision": "689533989dc27670e4fde6e0b313c5150b8efe7f",
+  "nginx_source_sha256": "6766defad57a5540917659b5d531c36d97ab2332dcef00514c943bf735b167c4",
+  "node_image": "docker.io/library/node@sha256:13de43fc0e22d861ea1d2bca89f43af36d9b7d6790260959d6325bb04c78ebe9",
+  "node_version": "22.21.1",
+  "yarn_version": "1.22.22",
+  "bases": {
+    "nova-compute": {
+      "upstream": "quay.io/openstack.kolla/nova-compute@sha256:f6c91e2c4f51f6b83a320a1000a7f96d8214df070766401206bc957236b40b9d",
+      "mirror": "ghcr.io/super-protocol/openstack-base-nova-compute@sha256:f6c91e2c4f51f6b83a320a1000a7f96d8214df070766401206bc957236b40b9d",
+      "config_id": "sha256:1dfdd22b18322ca176f6674855e45ef6463d0c8c9a47d82579e0b2a021825db7"
+    },
+    "skyline-console": {
+      "upstream": "quay.io/openstack.kolla/skyline-console@sha256:28c3fcc9be0785f65f39df2ddd5e0ad0658994db2182104b461b317c385901b4",
+      "mirror": "ghcr.io/super-protocol/openstack-base-skyline-console@sha256:28c3fcc9be0785f65f39df2ddd5e0ad0658994db2182104b461b317c385901b4",
+      "config_id": "sha256:9c4e5e3853696415a87de43c0477eb9199b40605aa844286fc1ab981e11876aa"
+    }
+  }
+}

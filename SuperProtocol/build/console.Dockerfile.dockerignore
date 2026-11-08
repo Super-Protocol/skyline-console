@@ -1,0 +1,6 @@
+.git
+node_modules
+skyline_console/static
+SuperProtocol/output
+**/__pycache__
+**/*.pyc
