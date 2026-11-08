@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Button } from 'antd';
 import { withRouter } from 'react-router-dom';
 
 export const linksForPath = (path) => {
-  const section = /^\/compute\/(flavor|image|instance|hypervisors?)(?:-admin)?(?:\/|$)/.exec(path);
+  const section = /^\/compute\/(flavor|image|instance|hypervisors?)(?:-admin)?\/?$/.exec(path);
   if (!section) return [];
   switch (section[1]) {
     case 'flavor':
@@ -26,5 +27,9 @@ export function TableLinks({ location }) {
     <Button key={id} id={id} href={href}>{label}</Button>
   ));
 }
+
+TableLinks.propTypes = {
+  location: PropTypes.shape({ pathname: PropTypes.string.isRequired }).isRequired,
+};
 
 export default withRouter(TableLinks);
