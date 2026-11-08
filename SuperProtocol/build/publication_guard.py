@@ -12,6 +12,7 @@ import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+import tomllib
 
 COMPONENTS = {
     'openstack': ('Super-Protocol/spvm-openstack', 'super-protocol/spvm-nova-compute', 'openstack-v'),
@@ -111,11 +112,10 @@ def current_version(component):
     root = Path(__file__).resolve().parent
     if component == 'openstack':
         root = root.parent
-        version = json.loads((root/'nova-spvm/manifest.json').read_bytes())['version']
-        project = (root/'nova-spvm/pyproject.toml').read_text()
-        found = re.findall(r'(?m)^version\s*=\s*"([^"]+)"\s*$', project)
-        if found != [version]:
-            raise PublicationError('Driver version mismatch: update BOTH nova-spvm/manifest.json and nova-spvm/pyproject.toml.')
+        project = tomllib.loads((root/'nova-spvm/pyproject.toml').read_text()).get('project', {})
+        version = project.get('version')
+        if project.get('name') != 'nova-spvm' or 'version' in project.get('dynamic', []):
+            raise PublicationError('Set the explicit nova-spvm project.version in nova-spvm/pyproject.toml.')
         pattern = r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)'
     else:
         version = json.loads((root/'component-lock.json').read_bytes())['component_version']
@@ -148,7 +148,7 @@ def used(version, value):
 
 
 def bump_hint(component):
-    files = ('nova-spvm/manifest.json AND nova-spvm/pyproject.toml' if component == 'openstack'
+    files = ('nova-spvm/pyproject.toml (project.version)' if component == 'openstack'
              else 'SuperProtocol/build/component-lock.json (component_version)')
     return 'Increase the explicit component version in '+files+'.'
 
