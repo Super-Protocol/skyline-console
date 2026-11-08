@@ -44,6 +44,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Require a new explicit version and reserve this publication attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 SuperProtocol/build/publication_guard.py reserve --component console
       - name: Install registry copier
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y skopeo
       - uses: docker/login-action@v3
@@ -57,10 +61,12 @@ jobs:
         id: identity
         run: |
           python3 - <<'PY'
-          import json, os
+          import json, os, sys
           from pathlib import Path
+          sys.path.insert(0, 'SuperProtocol/build')
+          from publication_guard import current_version
           lock = json.loads(Path('SuperProtocol/build/component-lock.json').read_bytes())
-          tag = lock['component_version'] + '-' + os.environ['GITHUB_SHA'] + '-r' + os.environ['GITHUB_RUN_ID'] + '-a' + os.environ['GITHUB_RUN_ATTEMPT']
+          tag = current_version('console') + '-' + os.environ['GITHUB_SHA'] + '-r' + os.environ['GITHUB_RUN_ID'] + '-a' + os.environ['GITHUB_RUN_ATTEMPT']
           with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
               stream.write('tag=' + tag + '\nbase=' + lock['bases']['skyline-console']['mirror'] + '\n')
           PY
@@ -92,11 +98,15 @@ jobs:
       - name: Publish unique tag without replacement
         env:
           TAG: ${{ steps.identity.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if skopeo inspect "docker://ghcr.io/super-protocol/skyline-console:$TAG" >/dev/null 2>&1; then
-            echo 'Refusing to overwrite an existing console tag' >&2
-            exit 1
-          fi
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, 'SuperProtocol/build')
+          import publication_guard
+          publication_guard.verify('console')
+          publication_guard.unused_image_tag('super-protocol/skyline-console', os.environ['TAG'])
+          PY
           docker push "ghcr.io/super-protocol/skyline-console:$TAG"
           python3 SuperProtocol/build/release.py --tag "$TAG" --output "$RUNNER_TEMP/console-release"
       - uses: actions/upload-artifact@v7
@@ -110,6 +120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.identity.outputs.tag }}
         run: |
+          python3 SuperProtocol/build/publication_guard.py verify --component console
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
             -f "ref=refs/tags/console-$TAG" -f "sha=$GITHUB_SHA"
           gh release create "console-$TAG" "$RUNNER_TEMP"/console-release/* \

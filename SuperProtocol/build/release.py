@@ -4,13 +4,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import tempfile
+import publication_guard
 
 
 def main(tag, output):
-    if not re.fullmatch(r'9\.0\.0-sp1-[0-9a-f]{40}-r[1-9][0-9]*-a[1-9][0-9]*', tag):
+    publication = publication_guard.verify('console')
+    expected = publication['version']+'-'+publication['commit']+'-r'+publication['run']+'-a'+publication['attempt']
+    if tag != expected:
         raise ValueError('Immutable console version/source/run/attempt required')
     repository = 'ghcr.io/super-protocol/skyline-console'
     raw = subprocess.check_output(['skopeo', 'inspect', '--raw', 'docker://' + repository + ':' + tag])
@@ -42,8 +44,9 @@ def main(tag, output):
     files = {name: hashlib.sha256((output / name).read_bytes()).hexdigest()
              for name in ('console-manifest.json', 'nginx.conf.j2')}
     console = json.loads((output / 'console-manifest.json').read_bytes())
-    if console['source_commit'] != os.environ['GITHUB_SHA']:
-        raise ValueError('Console source differs from the publishing commit')
+    if (console['source_commit'] != os.environ['GITHUB_SHA']
+            or console['version'] != publication['version']):
+        raise ValueError('Console source/version differs from the reserved publication')
     descriptor = {
         'schema_version': 1, 'capability': 'prebuilt-openstack-images-v1',
         'component': 'skyline-console', 'version': tag,

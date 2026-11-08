@@ -2,7 +2,7 @@
 
 This directory owns the Super Protocol console extensions, standalone SPVM
 pages, container build inputs and release verification. The Nova driver,
-authenticated web API and privileged workers remain in `swarm-cloud`.
+authenticated web API and privileged workers live in `spvm-openstack`.
 
 The fork starts at `9b839364f58a849e0a7d8e9b5b7c73a564b65cc3` on
 `stable/2026.2`. Work is developed on `feature/sync-with-swarm-cloud`;
@@ -37,7 +37,29 @@ revision; it retains the existing `/spvm-api/` loopback proxy on port 18776.
 Only a trusted feature-branch push or workflow dispatch has package/release
 write permission. Pull requests have no publishing secrets or permissions.
 Component releases include full source SHA, CI run and attempt in their unique
-identity. Releases and image tags are never replaced. There is no automatic
+identity. These suffixes do not permit reusing `component_version`: increase it
+explicitly in `SuperProtocol/build/component-lock.json` before another console
+publication (for example `9.0.0-sp1` -> `9.0.0-sp2`). Do not change upstream's
+`package.json` version for this downstream publication version.
+
+Before building or mirroring, `publication_guard.py` checks existing Git tags,
+GitHub releases/drafts and all paginated GHCR image tags. It exclusively reserves
+`publication/console/<component_version>` as an annotated tag binding the source
+commit, CI run and attempt. Producers verify that reservation again before
+publication. A concurrent run, new SHA, Re-run or new attempt cannot reuse it.
+Failed/partial publication consumes the reserved version too: inspect/fix the
+cause, increase the explicit version, and start a new run. Reservations are not
+completed releases or signatures; do not delete them to retry. The guard never
+updates/removes tags, overwrites artifacts or treats network/auth errors as
+confirmed absence. The reviewed public packages must already be accessible;
+new-name/visibility provisioning is an administrative prerequisite. Existing
+base mirrors are reused by digest; base tags are not rewritten.
+
+This is a trusted-CI fence, not protection against arbitrary package-admin pushes
+or deletion: preserve reservations and restrict those administrative operations.
+The coordinated kit can reuse an unchanged published console by digest; console
+version changes require a new reviewed source/release/checksum lock downstream.
+Releases and image tags are never replaced. There is no automatic
 GHCR retention cleanup: administrators must preserve every digest referenced by
 an installed kit. `console-component.json`, `console-manifest.json`,
 `nginx.conf.j2` and `SHA256SUMS` are input to the downstream coordinated kit,

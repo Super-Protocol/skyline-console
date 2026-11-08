@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from publication_guard import image_tags
 
 
 def run(*args):
@@ -37,10 +38,10 @@ def main():
             raise ValueError('Reviewed base config changed')
         destination = item['mirror'].split('@')[0] + ':base-' + item['mirror'].rsplit(':', 1)[1]
         # Never overwrite an existing publication, even with identical bytes.
-        found = subprocess.run(['skopeo', 'inspect', '--raw', 'docker://' + destination],
-                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        if found.returncode == 0:
-            if json.loads(found.stdout) != expected:
+        repository, tag = destination.removeprefix('ghcr.io/').split(':', 1)
+        if tag in image_tags(repository):
+            found = run('skopeo', 'inspect', '--raw', 'docker://' + destination)
+            if json.loads(found) != expected:
                 raise ValueError('Existing base tag has different content; refusing replacement')
         else:
             subprocess.run(['skopeo', 'copy', '--preserve-digests',
