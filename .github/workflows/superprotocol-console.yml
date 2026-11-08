@@ -1,6 +1,8 @@
 name: Super Protocol console images
 
 on:
+  push:
+    branches: [feature/sync-with-swarm-cloud]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -30,7 +32,7 @@ jobs:
           git diff --check
 
   publish:
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'Super-Protocol/skyline-console' && github.ref == 'refs/heads/feature/sync-with-swarm-cloud'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'Super-Protocol/skyline-console' && github.ref == 'refs/heads/feature/sync-with-swarm-cloud'
     needs: check
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -50,7 +52,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Mirror reviewed bases and verify anonymous downloads
-        if: inputs.mirror_bases
         run: python3 SuperProtocol/build/mirror-bases.py
       - name: Resolve immutable build identity
         id: identity

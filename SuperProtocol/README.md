@@ -34,7 +34,7 @@ configuration and healthcheck defaults are inherited and checked by the release
 validator. The nginx template is owned source, derived from the pinned Kolla
 revision; it retains the existing `/spvm-api/` loopback proxy on port 18776.
 
-Only an explicit trusted feature-branch workflow dispatch has package/release
+Only a trusted feature-branch push or workflow dispatch has package/release
 write permission. Pull requests have no publishing secrets or permissions.
 Component releases include full source SHA, CI run and attempt in their unique
 identity. Releases and image tags are never replaced. There is no automatic

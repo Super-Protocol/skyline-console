@@ -23,6 +23,15 @@ def inspect(reference, *, anonymous=False):
 def main():
     lock = json.loads((Path(__file__).parent / 'component-lock.json').read_bytes())
     for name, item in lock['bases'].items():
+        # Subsequent builds use only the immutable mirror. An existing mirror
+        # with wrong content is never repaired or replaced automatically.
+        cached = subprocess.run(['skopeo', 'inspect', '--raw', 'docker://' + item['mirror']],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        if cached.returncode == 0:
+            if ('sha256:' + hashlib.sha256(cached.stdout).hexdigest() != item['mirror'].split('@')[1]
+                    or json.loads(cached.stdout)['config']['digest'] != item['config_id']):
+                raise ValueError('Pinned mirror identity differs')
+            continue
         expected = inspect(item['upstream'], anonymous=True)
         if expected['config']['digest'] != item['config_id']:
             raise ValueError('Reviewed base config changed')
