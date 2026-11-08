@@ -4,6 +4,7 @@ Checks exact static membership, plain/gzip consistency and inherited Kolla
 runtime defaults. A build is not a guest attestation or cryptographic signature.
 """
 import argparse
+from contextlib import contextmanager
 import gzip
 import hashlib
 import json
@@ -12,13 +13,25 @@ import subprocess
 import tarfile
 import tempfile
 
-STATIC = 'var/lib/kolla/venv/lib/python3/site-packages/skyline_console/static/'
+STATIC = '/var/lib/kolla/venv/lib/python3/site-packages/skyline_console/static'
 FIELDS = ('User', 'Entrypoint', 'Cmd', 'Env', 'WorkingDir', 'Healthcheck',
           'StopSignal', 'ExposedPorts', 'Volumes')
 
 
 def docker(*args):
     return subprocess.check_output(['docker', *args])
+
+
+@contextmanager
+def copied_tree(container, path):
+    # docker cp resolves Kolla's python3 -> python3.x parent symlink. Exported
+    # rootfs member paths need not use that alias. No container is executed.
+    with tempfile.TemporaryFile() as stream:
+        subprocess.run(['docker', 'cp', container + ':' + path + '/.', '-'],
+                       stdout=stream, check=True)
+        stream.seek(0)
+        with tarfile.open(fileobj=stream) as archive:
+            yield archive
 
 
 def verify(image, base, output):
@@ -30,33 +43,29 @@ def verify(image, base, output):
         raise ValueError('Console changed inherited Kolla runtime defaults')
     container = docker('create', '--network=none', image).decode().strip()
     try:
-        # A stopped owned container is exported, never started or networked.
-        with tempfile.TemporaryFile() as stream:
-            subprocess.run(['docker', 'export', container], stdout=stream, check=True)
-            stream.seek(0)
-            with tarfile.open(fileobj=stream) as archive:
-                manifest = json.load(archive.extractfile('usr/share/superprotocol/console-manifest.json'))
-                expected = manifest['asset_sha256']
-                entries = {m.name.removeprefix(STATIC): m for m in archive
-                           if m.name.startswith(STATIC) and not m.isdir()}
-                if set(entries) != set(expected):
-                    raise ValueError('Unexpected/missing console files, including stale base assets')
-                for name, member in entries.items():
-                    if (not member.isfile() or '..' in PurePosixPath(name).parts
-                            or member.size > 64 * 1024 * 1024):
-                        raise ValueError('Unsafe or oversized console asset')
-                    data = archive.extractfile(member).read()
-                    if hashlib.sha256(data).hexdigest() != expected[name]:
-                        raise ValueError('Console file checksum mismatch')
-                    if name.endswith('.gz'):
-                        raw = archive.extractfile(entries[name[:-3]]).read()
-                        if gzip.decompress(data) != raw:
-                            raise ValueError('Stale console gzip')
-                nginx = archive.extractfile('usr/share/superprotocol/nginx.conf.j2').read()
-                if hashlib.sha256(nginx).hexdigest() != manifest['nginx_sha256']:
-                    raise ValueError('Nginx checksum mismatch')
-                if nginx.count(b'location /spvm-api/') != 1 or b'http://127.0.0.1:18776/' not in nginx:
-                    raise ValueError('Expected loopback SPVM proxy required')
+        with copied_tree(container, '/usr/share/superprotocol') as metadata:
+            manifest = json.load(metadata.extractfile('console-manifest.json'))
+            nginx = metadata.extractfile('nginx.conf.j2').read()
+        with copied_tree(container, STATIC) as archive:
+            expected = manifest['asset_sha256']
+            entries = {m.name.removeprefix('./'): m for m in archive if not m.isdir()}
+            if set(entries) != set(expected):
+                raise ValueError('Unexpected/missing console files, including stale base assets')
+            for name, member in entries.items():
+                if (not member.isfile() or '..' in PurePosixPath(name).parts
+                        or member.size > 64 * 1024 * 1024):
+                    raise ValueError('Unsafe or oversized console asset')
+                data = archive.extractfile(member).read()
+                if hashlib.sha256(data).hexdigest() != expected[name]:
+                    raise ValueError('Console file checksum mismatch')
+                if name.endswith('.gz'):
+                    raw = archive.extractfile(entries[name[:-3]]).read()
+                    if gzip.decompress(data) != raw:
+                        raise ValueError('Stale console gzip')
+            if hashlib.sha256(nginx).hexdigest() != manifest['nginx_sha256']:
+                raise ValueError('Nginx checksum mismatch')
+            if nginx.count(b'location /spvm-api/') != 1 or b'http://127.0.0.1:18776/' not in nginx:
+                raise ValueError('Expected loopback SPVM proxy required')
     finally:
         docker('rm', container)
     output = Path(output)
