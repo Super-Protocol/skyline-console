@@ -14,7 +14,7 @@ Presentation links do not grant API permissions.
 
 ## Build and publication
 
-`SuperProtocol/build/component-lock.json` pins Node 22.21.1, Yarn Classic
+`SuperProtocol/build/component-lock.json` pins Node 22.23.4, Yarn Classic
 1.22.22, the Kolla revision, and the reviewed Linux/amd64 base manifests and
 their distinct config IDs. A manifest digest is not a Docker image/config ID.
 The first trusted workflow dispatch mirrors the two reviewed bases to new GHCR
