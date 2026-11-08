@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Create Swarm cluster — OpenStack</title>
+  <link rel="icon" href="/superprotocol-logo.jpg">
+  <link rel="stylesheet" href="/swarm-nodes.css?v=node-cards-v1">
+  <script src="/swarm-create.js?v=node-cards-v1" defer></script>
+</head>
+<body><main>
+  <a href="/swarm-clusters.html">← Swarm Clusters</a>
+  <h1>Create Swarm cluster</h1>
+  <p>Choose an approved provider configuration and resources for every node.
+    Use Auto placement or select a compute host for each node (administrators).
+    An explicit host must fit the entire VM; no fallback to another host is used.
+    The seed must pass signature and CA readiness
+    before any join starts. No SSH or VM restart is used.</p>
+  <form id="create-form">
+    <label for="template">Provider configuration</label><select id="template" required disabled></select>
+    <div class="template-actions">
+      <button id="view-template" type="button" disabled>View configuration</button>
+      <button id="new-template" type="button" disabled>Create template from directory</button>
+    </div>
+    <section id="template-editor" hidden>
+      <h2>New provider template</h2>
+      <label for="template-name">Template name</label><input id="template-name" maxlength="40" placeholder="production" disabled>
+      <label for="provider-directory">Provider-config directory on your computer</label>
+      <input id="provider-directory" type="file" webkitdirectory directory multiple disabled>
+      <p>The directory must contain swarm/config.yaml. Files are uploaded over HTTPS
+        and stored privately in Barbican. The template is an independent snapshot;
+        GitHub tokens, PowerDNS API keys and other recognized secrets are masked in previews.</p>
+      <div class="template-actions">
+        <button id="save-template" type="button" disabled>Save template</button>
+        <button id="cancel-template" type="button" disabled>Cancel</button>
+      </div>
+    </section>
+    <pre id="template-preview" hidden aria-live="polite"></pre>
+    <label for="name">Cluster name</label><input id="name" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="my-swarm" disabled>
+    <label for="swarm_domain">Swarm DNS name</label><input id="swarm_domain" type="text" maxlength="253" placeholder="Suggested from cluster name" disabled>
+    <label for="pki_domain">PKI DNS name</label><input id="pki_domain" type="text" maxlength="253" placeholder="ca.&lt;swarm DNS name&gt;" disabled>
+    <button id="suggest-domains" type="button" disabled>Use suggested names</button>
+    <p id="domains"></p>
+    <label for="image">SPVM image</label><select id="image" required disabled></select>
+    <p><a href="/swarm-releases.html" target="_blank" rel="noopener">Register SPVM release (administrator)</a>.
+      Reload this form after registering a release.</p>
+    <p>At least three nodes are required. Every launch receives a unique node name.
+      Select each node's CPU, RAM, state disk and GPU through its measured flavor.</p>
+    <div id="nodes"></div>
+    <div class="create-actions">
+      <button id="add-node" type="button" disabled>Add node</button>
+      <button id="submit" type="submit" disabled>Create cluster</button>
+    </div>
+  </form>
+  <p id="status" role="status" aria-live="polite">Loading approved configurations…</p>
+  <p>Resource checks are advisory, not reservations. Failed or interrupted creation
+    retains its resources for review. Public DNS/TLS/ingress publication remains
+    an operator step; instance readiness alone does not mean the public Swarm UI is reachable.</p>
+</main></body>
+</html>

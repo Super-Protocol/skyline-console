@@ -73,7 +73,8 @@ export class FlavorStore extends Base {
       return {
         ...rest,
         ...extraRest,
-        architecture: extraRest[':architecture'] || 'custom',
+        architecture: extraRest['spvm:runtime'] === 'measured-v1'
+          ? 'superprotocol' : extraRest[':architecture'] || 'custom',
         category: extraRest[':category'],
         ...gpuInfo,
         is_public: rest['os-flavor-access:is_public'],

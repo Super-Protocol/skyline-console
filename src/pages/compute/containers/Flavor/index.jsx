@@ -21,6 +21,7 @@ import Heterogeneous from './Heterogeneous';
 import Arm from './Arm';
 import BareMetal from './BareMetal';
 import Other from './Other';
+import SuperProtocolFlavor from '../../../../../SuperProtocol/src/Flavor';
 
 export class Flavor extends Base {
   init() {
@@ -44,6 +45,7 @@ export class Flavor extends Base {
       bare_metal: BareMetal,
       arm_architecture: Arm,
       custom: Other,
+      superprotocol: SuperProtocolFlavor,
     };
     return architectures.map((it) => ({
       title: flavorArchitectures[it],

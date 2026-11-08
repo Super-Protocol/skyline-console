@@ -35,8 +35,19 @@ export class SkylineStore extends Base {
 
   @action
   async fetchDomainList() {
-    const result = await this.client.domains();
-    this.domains = result;
+    // The unauthenticated login form must not enumerate Keystone domains.
+    const response = await fetch('/api/openstack/skyline/api/v1/config', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to load Skyline login configuration');
+    }
+    const result = await response.json();
+    if (typeof result.default_domain !== 'string' || !result.default_domain.trim()) {
+      throw new Error('Skyline login configuration has no default domain');
+    }
+    this.domains = [result.default_domain];
   }
 
   @action

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Host resource budgets — Super Protocol</title><link rel="stylesheet" href="/spvm-host-budgets.css">
+<script src="/spvm-host-pools.js" defer></script><script src="/spvm-host-gpus.js" defer></script><script src="/spvm-host-budgets.js" defer></script></head><body><main>
+<nav aria-label="Back links"><a href="/compute/hypervisors-admin">← Hypervisors</a><a href="/swarm-clusters.html">Swarm Clusters</a></nav>
+<header class="page-header"><div><p class="eyebrow">SUPER PROTOCOL · ADMINISTRATION</p>
+<h1>Host resource budgets</h1><p class="subtitle">Choose how much CPU, memory and state storage each host contributes to OpenStack.</p></div>
+<button id="refresh" type="button" class="button secondary">Refresh hosts</button></header>
+<aside class="safety-note"><strong>New hosts start unconfigured and disabled.</strong>
+Set CPU/RAM and at least one enabled state pool, optionally select GPUs, then explicitly Enable the host.
+Resource changes require an empty host and leave it disabled. Disable blocks new launches without stopping existing VMs; project quotas are unchanged.</aside>
+<p id="status" class="page-status" role="status">Loading hosts…</p>
+<section id="hosts" aria-label="Compute host budgets"></section>
+</main></body></html>

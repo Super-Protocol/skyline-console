@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Create Super Protocol flavor — OpenStack</title>
+  <link rel="icon" href="/superprotocol-logo.jpg"><link rel="stylesheet" href="/swarm-nodes.css?v=profile-table-v1">
+  <script src="/spvm-flavors.js?v=profile-table-v1" defer></script>
+</head><body><main>
+  <a href="/compute/flavor-admin">← Compute / Flavors</a> · <a href="/swarm-clusters.html">Swarm Clusters</a>
+  <h1>Create Super Protocol flavor</h1>
+  <p>Administrator-only, private to the current project. No VM is started or changed.</p>
+  <form id="flavor-form">
+    <label for="name">Display name</label><input id="name" maxlength="128" placeholder="H100 · 16 CPU · 64 GiB" required disabled>
+    <label for="vcpus">vCPU</label><input id="vcpus" type="number" min="1" max="4096" step="1" value="8" required disabled>
+    <label for="ram">RAM (GiB)</label><input id="ram" type="number" min="1" max="1048576" step="1" value="32" required disabled>
+    <label for="state">State disk (GiB)</label><input id="state" type="number" min="1" max="1048576" step="1" value="300" required disabled>
+    <label for="gpu">GPU profile</label><select id="gpu" disabled></select>
+    <label for="gpu-count">GPU count</label><input id="gpu-count" type="number" min="0" max="64" step="1" value="0" required disabled>
+    <p id="gpu-info"></p><button id="submit" type="submit" disabled>Create flavor</button>
+  </form>
+  <pre id="status" role="status" aria-live="polite">Loading administrator permissions and configured GPU profiles…</pre>
+  <h2>Available Super Protocol profiles</h2><div id="profiles"></div>
+  <p>The GPU column shows the type and number requested by the flavor. Nova assigns
+    physical cards when a VM is launched. An unavailable GPU profile is not replaced automatically.</p>
+  <p>Nova extra specs, native PCI requests and Placement state accounting are generated automatically.
+    Profile creation does not reserve resources or require currently free GPUs. At launch the entire VM
+    must fit on one host. The technical flavor name is generated from resources; the display name is
+    stored in its description. Existing profiles are reused without renaming or editing them.
+    To change resources, create another profile; this never resizes a running VM.</p>
+</main></body></html>

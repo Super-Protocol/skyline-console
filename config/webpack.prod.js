@@ -29,7 +29,7 @@ const theme = getThemeConfig();
 
 const root = (path) => resolve(__dirname, `../${path}`);
 
-const { version, ...restConfig } = common;
+const { version: ignoredVersion, ...restConfig } = common;
 
 const outputPath = 'skyline_console/static';
 
@@ -41,10 +41,10 @@ module.exports = (env) => {
       main: root('src/core/index.jsx'),
     },
     output: {
-      filename: '[name].js',
+      filename: '[name].[contenthash:16].js',
       path: root(outputPath),
       publicPath: '/',
-      chunkFilename: `[name].bundle.${version}.js`,
+      chunkFilename: '[name].[contenthash:16].js',
     },
     mode: 'production',
     // devtool: 'inline-source-map',
@@ -165,7 +165,7 @@ module.exports = (env) => {
         },
       },
       runtimeChunk: {
-        name: () => `runtime.${version}`,
+        name: () => 'runtime',
       },
       minimize: true, // default true for production
       minimizer: [

@@ -71,6 +71,7 @@ export const flavorArchitectures = {
   bare_metal: t('Bare Metal'),
   arm_architecture: t('ARM Architecture'),
   custom: t('Custom'),
+  superprotocol: 'Super Protocol',
   all: t('All Flavors'),
 };
 
@@ -261,7 +262,9 @@ export const getAllArchitecture = (data, withCustom = true) => {
     console.log(e);
   }
   if (withCustom) {
-    architectures.push('custom');
+    ['superprotocol', 'custom'].forEach((architecture) => {
+      if (!architectures.includes(architecture)) architectures.push(architecture);
+    });
   }
   return architectures;
 };
@@ -286,7 +289,7 @@ export const getFlavorArchInfo = (flavor) => {
   if (!architecture) {
     return '-';
   }
-  if (architecture === 'custom') {
+  if (architecture === 'custom' || architecture === 'superprotocol') {
     return flavorArchitectures[architecture];
   }
   return `${flavorArchitectures[architecture] || architecture} - ${

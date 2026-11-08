@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Swarm Clusters — OpenStack</title>
+  <link rel="icon" href="/superprotocol-logo.jpg">
+  <link rel="stylesheet" href="/swarm-nodes.css">
+  <link rel="stylesheet" href="/swarm-clusters.css?v=manual-recovery-v1">
+  <script src="/swarm-clusters.js?v=cluster-diagnostics-v1" defer></script>
+</head>
+<body>
+  <main>
+    <a href="/compute/instance">← Compute / Instances</a>
+    <h1><img src="/superprotocol-logo.jpg" alt="Super Protocol">Swarm Clusters</h1>
+    <div class="toolbar">
+      <a href="/swarm-create.html">Create Swarm cluster</a>
+      <a href="/swarm-releases.html">SPVM releases</a>
+      <a href="/spvm-flavors.html">Create Super Protocol flavor</a>
+      <a href="/spvm-host-budgets.html">Host resource budgets</a>
+      <label for="search">Search</label>
+      <input id="search" type="search" placeholder="Cluster name, UUID or domain">
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+    <p id="status" role="status" aria-live="polite">Loading your project's clusters…</p>
+    <div id="clusters"></div>
+    <p>ACTIVE requires at least three Nova ACTIVE / SPVM READY nodes.
+       Delete cluster is permanent, not pause/resume; exact-name confirmation
+       and an explicit root-approved retirement policy are required.
+       Failed additions and surplus-node failures are shown separately.
+       Statuses reflect Nova state, available host heartbeats and SPVM readiness,
+       not application health or live Swarm quorum.
+       Recovery is manual: failed or missing nodes are never automatically restarted,
+       replaced or deleted. Current-project instances and verified missing historical
+       nodes are shown. Web node addition also
+       requires cluster enrollment and publisher permission.</p>
+  </main>
+</body>
+</html>

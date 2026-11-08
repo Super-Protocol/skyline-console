@@ -1,0 +1,114 @@
+name: Super Protocol console images
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mirror_bases:
+        description: Preserve reviewed upstream bases in new GHCR packages first
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sp-console-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Check release scripts
+        run: |
+          python3 -m py_compile SuperProtocol/build/*.py
+          node --check SuperProtocol/build/assemble-static.js
+          git diff --check
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'Super-Protocol/skyline-console' && github.ref == 'refs/heads/feature/sync-with-swarm-cloud'
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install registry copier
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y skopeo
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Mirror reviewed bases and verify anonymous downloads
+        if: inputs.mirror_bases
+        run: python3 SuperProtocol/build/mirror-bases.py
+      - name: Resolve immutable build identity
+        id: identity
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          lock = json.loads(Path('SuperProtocol/build/component-lock.json').read_bytes())
+          tag = lock['component_version'] + '-' + os.environ['GITHUB_SHA'] + '-r' + os.environ['GITHUB_RUN_ID'] + '-a' + os.environ['GITHUB_RUN_ATTEMPT']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write('tag=' + tag + '\nbase=' + lock['bases']['skyline-console']['mirror'] + '\n')
+          PY
+      - name: Pull reviewed mirror and check config identity
+        env:
+          BASE: ${{ steps.identity.outputs.base }}
+        run: |
+          docker pull --platform=linux/amd64 "$BASE"
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          base = json.loads(Path('SuperProtocol/build/component-lock.json').read_bytes())['bases']['skyline-console']
+          image = json.loads(subprocess.check_output(['docker', 'image', 'inspect', base['mirror']]))[0]
+          if image['Id'] != base['config_id'] or image['Os'] != 'linux' or image['Architecture'] != 'amd64':
+              raise SystemExit('Base config/platform differs from the reviewed mirror')
+          PY
+      - name: Build console from source with frozen dependencies
+        env:
+          BASE: ${{ steps.identity.outputs.base }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          docker build --platform=linux/amd64 \
+            -f SuperProtocol/build/console.Dockerfile \
+            --build-arg "BASE_IMAGE=$BASE" --build-arg "SOURCE_COMMIT=$GITHUB_SHA" \
+            --build-arg "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" \
+            -t "ghcr.io/super-protocol/skyline-console:$TAG" .
+          python3 SuperProtocol/build/verify-image.py --image "ghcr.io/super-protocol/skyline-console:$TAG" \
+            --base "$BASE" --output "$RUNNER_TEMP/console-release"
+      - name: Publish unique tag without replacement
+        env:
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          if skopeo inspect "docker://ghcr.io/super-protocol/skyline-console:$TAG" >/dev/null 2>&1; then
+            echo 'Refusing to overwrite an existing console tag' >&2
+            exit 1
+          fi
+          docker push "ghcr.io/super-protocol/skyline-console:$TAG"
+          python3 SuperProtocol/build/release.py --tag "$TAG" --output "$RUNNER_TEMP/console-release"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: skyline-console-${{ steps.identity.outputs.tag }}
+          path: ${{ runner.temp }}/console-release/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish immutable console component release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          gh release create "console-$TAG" "$RUNNER_TEMP"/console-release/* \
+            --target "$GITHUB_SHA" --title "Super Protocol console $TAG" --prerelease \
+            --notes 'Source-built console component. Not a complete offline OpenStack kit. SHA256 is an integrity check, not a signature or guest attestation.'

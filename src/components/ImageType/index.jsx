@@ -44,6 +44,7 @@ export default class index extends Component {
   constructor(props) {
     super(props);
     this.icons = {
+      'super-spvm': '/superprotocol-logo.jpg',
       centos: centosIcon,
       ubuntu: ubuntuIcon,
       fedora: fedoraIcon,

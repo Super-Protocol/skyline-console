@@ -17,6 +17,7 @@ import { action, observable } from 'mobx';
 import { get } from 'lodash';
 import client from 'client';
 import Base from 'stores/base';
+import { getVirtualGpuCapacity } from '../../../SuperProtocol/src/vgpu';
 
 export class HypervisorStore extends Base {
   @observable
@@ -119,17 +120,10 @@ export class HypervisorStore extends Base {
       in_tree: id,
     });
     const provider = (resource_providers || []).filter((it) => it.uuid !== id);
-    const promiseArr = [this.providerClient.inventories.list(id)];
-    if (provider.length) {
-      // If there is a provider, the VGPU is available
-      promiseArr.push(
-        this.providerClient.inventories.list(provider[0].uuid),
-        this.providerClient.usages.list(provider[0].uuid)
-      );
-    }
-    const [inventoriesBase, inventoriesVGPU, usagesVGPU] = await Promise.all(
-      promiseArr
-    );
+    const [inventoriesBase, virtualGpu] = await Promise.all([
+      this.providerClient.inventories.list(id),
+      getVirtualGpuCapacity(this.providerClient, provider),
+    ]);
     if (item.hypervisor_type !== 'ironic') {
       const {
         inventories: {
@@ -158,13 +152,7 @@ export class HypervisorStore extends Base {
         item.memory_mb *= memory_ratio;
       }
     }
-    if (inventoriesVGPU && usagesVGPU) {
-      const { inventories: { VGPU: { allocation_ratio, total } } = {} } =
-        inventoriesVGPU;
-      item.vgpus = allocation_ratio * total;
-      const { usages: { VGPU } = {} } = usagesVGPU;
-      item.vgpus_used = VGPU;
-    }
+    Object.assign(item, virtualGpu);
     item.memory_mb_used_gb = getGiBValue(item.memory_mb_used);
     item.memory_mb_gb = getGiBValue(item.memory_mb);
     const newItem = await this.detailDidFetch(item, all_projects);

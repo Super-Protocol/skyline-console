@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import React from 'react';
+import SuperProtocolTableLinks from '../../../../SuperProtocol/src/TableLinks';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import isEqual from 'react-fast-compare';
@@ -819,6 +820,7 @@ export class BaseTable extends React.Component {
               'table-header-btns'
             )}
           >
+            <SuperProtocolTableLinks />
             {this.renderRefresh()}
             {this.renderDownload()}
             {this.renderCustomButton()}

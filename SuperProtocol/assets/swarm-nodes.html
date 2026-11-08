@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Add Swarm node — OpenStack</title>
+  <link rel="icon" href="/superprotocol-logo.jpg">
+  <link rel="stylesheet" href="/swarm-nodes.css">
+  <script src="/swarm-nodes.js?v=host-placement-v1" defer></script>
+</head>
+<body>
+  <main>
+    <a href="/compute/instance">← Compute / Instances</a>
+    · <a href="/swarm-clusters.html">Swarm Clusters</a>
+    <h1><img src="/superprotocol-logo.jpg" alt="Super Protocol">Add Swarm node</h1>
+    <p>Add one join node to an existing cluster. Bootstrap and current nodes stay running.</p>
+    <form id="node-form">
+      <label for="cluster">Swarm cluster</label>
+      <select id="cluster" required disabled><option>Loading…</option></select>
+      <div id="members"></div>
+      <label for="profile">Resources (Nova flavor)</label>
+      <select id="profile" required disabled><option>Loading…</option></select>
+      <p id="resources"></p>
+      <label for="host">Compute host</label>
+      <select id="host" disabled><option value="">Auto — Nova selects a host</option></select>
+      <p id="host-info"></p>
+      <p>Free capacity is checked before submission. The check does not reserve resources; Nova makes the final placement decision.</p>
+      <p>Auto lets Nova select a host. An explicit host must fit the entire VM; there is no fallback to another host. A requested GPU is never silently replaced with CPU-only.</p>
+      <button id="submit" type="submit" disabled>Add one join node</button>
+      <button id="check" type="button" disabled>Recheck capacity</button>
+    </form>
+    <p id="status" role="status" aria-live="polite">Checking your Skyline session…</p>
+    <p>Only clusters enrolled for web management and users authorized to publish their join configuration are shown.</p>
+  </main>
+</body>
+</html>
