@@ -44,8 +44,9 @@ def verify(image, base, output):
     container = docker('create', '--network=none', image).decode().strip()
     try:
         with copied_tree(container, '/usr/share/superprotocol') as metadata:
-            manifest = json.load(metadata.extractfile('console-manifest.json'))
-            nginx = metadata.extractfile('nginx.conf.j2').read()
+            members = {m.name.removeprefix('./'): m for m in metadata if m.isfile()}
+            manifest = json.load(metadata.extractfile(members['console-manifest.json']))
+            nginx = metadata.extractfile(members['nginx.conf.j2']).read()
         with copied_tree(container, STATIC) as archive:
             expected = manifest['asset_sha256']
             entries = {m.name.removeprefix('./'): m for m in archive if not m.isdir()}
