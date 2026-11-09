@@ -11,6 +11,17 @@ Existing public SPVM page URLs are retained. Native Skyline changes are made
 in React source, not by modifying compiled JavaScript or inspecting the DOM.
 Presentation links do not grant API permissions.
 
+**General settings** is linked from Hypervisors, host resources and releases.
+It controls debug-image registration and new launch policy for the enrolled
+compute fleet through `/spvm-api/v1/settings`. The matching backend and executors
+must support `typed-general-settings-v1`; no JSON-file editing, SSH operation or
+service restart is performed by the page. It preserves request IDs and uncertain
+outcomes, requires confirmation, and never retries automatically. Existing
+running guests, CC mode, resources and scheduling state are not changed.
+
+Native table extension links use an Ant Design Space so link-style buttons have
+the same visible separation as the adjacent native toolbar controls.
+
 ## Build and publication
 
 Keep operator/build instructions independent of internal test runs. Do not add

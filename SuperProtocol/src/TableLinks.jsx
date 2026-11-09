@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button } from 'antd';
+import { Button, Space } from 'antd';
 import { withRouter } from 'react-router-dom';
 
 export const linksForPath = (path) => {
@@ -18,14 +18,23 @@ export const linksForPath = (path) => {
         ['spvm-clusters-link', '/swarm-clusters.html', 'Swarm Clusters'],
       ];
     default:
-      return [['spvm-host-budgets-link', '/spvm-host-budgets.html', 'Host resource budgets']];
+      return [
+        ['spvm-host-budgets-link', '/spvm-host-budgets.html', 'Host resource budgets'],
+        ['spvm-settings-link', '/spvm-settings.html', 'General settings'],
+      ];
   }
 };
 
 export function TableLinks({ location }) {
-  return linksForPath(location.pathname).map(([id, href, label]) => (
-    <Button key={id} id={id} href={href}>{label}</Button>
-  ));
+  const links = linksForPath(location.pathname);
+  if (!links.length) return null;
+  return (
+    <Space size={10} wrap style={{ marginRight: 10, marginBottom: 4 }}>
+      {links.map(([id, href, label]) => (
+        <Button key={id} id={id} href={href}>{label}</Button>
+      ))}
+    </Space>
+  );
 }
 
 TableLinks.propTypes = {

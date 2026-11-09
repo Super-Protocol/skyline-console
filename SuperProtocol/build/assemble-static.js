@@ -51,6 +51,7 @@ const manifest = {
   schema_version: 1,
   capability: 'prebuilt-openstack-images-v1',
   request_origin_policy: 'trusted-loopback-proxy-v1',
+  settings_api: 'typed-general-settings-v1',
   component: 'skyline-console',
   version: lock.component_version,
   source_commit: commit,
