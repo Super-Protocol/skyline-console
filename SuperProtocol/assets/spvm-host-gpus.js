@@ -16,6 +16,7 @@
     const update=()=>{for(const button of controls)button.disabled=busy||button.dataset.discovery==='true'&&host.blockers.length>0;};
     async function poll(id){
       try{const v=await api('/'+encodeURIComponent(id));if(!section.isConnected)return;status.textContent=`${v.status}: ${v.message||''}`;
+        if(window.SpvmResourceRequests.missing(v,status,key))return;
         if(['SUCCEEDED','REFUSED','REVIEW_REQUIRED'].includes(v.status)){sessionStorage.removeItem(key);status.textContent+=' Refresh hosts before another change.';}
         else setTimeout(()=>{if(section.isConnected)poll(id);},5000);
       }catch(e){status.textContent=e.message+' Inspect the same request before retrying.';}

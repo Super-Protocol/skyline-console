@@ -35,6 +35,7 @@
     if(generation!==view)return;
     try {
       const result=await api('/'+encodeURIComponent(id));if(generation!==view)return;
+      if(window.SpvmResourceRequests.missing(result,message,key))return;
       message.textContent=`${result.status}: ${result.message||''} Request: ${id}`;
       if(['SUCCEEDED','REFUSED','REVIEW_REQUIRED'].includes(result.status)) {
         sessionStorage.removeItem(key);button.disabled=true;
@@ -59,6 +60,7 @@
       if(generation!==view)return;
       try{
         const result=await api('/'+encodeURIComponent(id),undefined,'host-lifecycle');if(generation!==view)return;
+        if(window.SpvmResourceRequests.missing(result,message,key))return;
         message.textContent=`${result.status}: ${result.message||''} Request: ${id}`;
         if(['SUCCEEDED','REFUSED','REVIEW_REQUIRED'].includes(result.status)){
           sessionStorage.removeItem(key);message.textContent+=' Refresh hosts to see the verified state.';
@@ -158,7 +160,7 @@
         const result=await api('',body);await poll(result.request_id,message,button,key,generation);
       } catch(error) {
         if(error.notAccepted) {
-          sessionStorage.removeItem(key);
+          sessionStorage.removeItem(key);pending=false;update();
           message.textContent=error.message+'. Request was not accepted. Refresh the host catalog.';
         } else message.textContent=error.message+'. Inspect this same request before any retry.';
       }
@@ -184,5 +186,6 @@
     catch(error){$('hosts').replaceChildren();$('status').className='page-status error';$('status').textContent=error.message;}
     finally {$('refresh').disabled=false;}
   }
+  window.addEventListener('spvm-hosts-refresh',refresh);
   $('refresh').addEventListener('click',refresh);refresh();
 })();

@@ -67,6 +67,7 @@
       if(version!==generation)return;
       try {
         const result=await api('/'+encodeURIComponent(request));if(version!==generation)return;
+        if(window.SpvmResourceRequests.missing(result,status,key))return;
         status.textContent=`${result.status}: ${result.message||''} Request: ${request}`;
         if(['SUCCEEDED','REFUSED','REVIEW_REQUIRED'].includes(result.status)){
           sessionStorage.removeItem(key);status.textContent+=' Refresh hosts before any further change.';
@@ -95,7 +96,10 @@
       const body={request_id:crypto.randomUUID(),host:host.host,generation:host.generation,pools};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();
       try {const response=await api('',body);await poll(response.request_id);}
-      catch(e){if(e.notAccepted)sessionStorage.removeItem(key);status.textContent=e.message+'. Refresh to inspect the same host/request before retrying.';}
+      catch(e){
+        if(e.notAccepted){sessionStorage.removeItem(key);pending=false;update();}
+        status.textContent=e.message+(e.notAccepted?'. Request was not accepted.':'. Refresh to inspect the same host/request before retrying.');
+      }
     });
     if(host.blockers.length){const blocked=el('p','Pool changes unavailable: '+host.blockers.join(', '));blocked.className='host-notice';panel.prepend(blocked);}
     update();if(saved){details.open=true;try{poll(JSON.parse(saved).request_id);}catch(_){status.textContent='Saved pool request needs manual review.';}}

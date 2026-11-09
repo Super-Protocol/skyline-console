@@ -38,6 +38,21 @@ configuration and healthcheck defaults are inherited and checked by the release
 validator. The nginx template is owned source, derived from the pinned Kolla
 revision; it retains the existing `/spvm-api/` loopback proxy on port 18776.
 
+The matched web backend requires `trusted-loopback-proxy-v1`. For SPVM API
+requests, nginx overwrites `X-SPVM-UI-Origin` from `$scheme://$http_host`; never
+preserve a client-provided value or drop the original Host port. The backend
+accepts only HTTPS same-origin writes through controller loopback, followed by
+normal Skyline session and administrator checks. SSH tunnel local ports need
+not be enumerated. Do not expose the backend or bypass the proxy; additional
+proxy/TLS termination paths require a separate trust review. Missing/null or
+mismatched origins fail closed, without enabling CORS or wildcard hosts.
+
+Resource editors retain uncertain request IDs without automatic retries. Known
+pre-dispatch rejections remove only the unaccepted local intent. `NOT_FOUND`
+stops polling and offers explicit dismissal of the browser record after review;
+it does not cancel/repeat a server action or assert that another cloud never ran
+that ID. Registered requests continue to wait for the protected worker result.
+
 Only a trusted feature-branch push or workflow dispatch has package/release
 write permission. Pull requests have no publishing secrets or permissions.
 Component releases include full source SHA, CI run and attempt in their unique

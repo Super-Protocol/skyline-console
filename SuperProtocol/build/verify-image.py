@@ -67,6 +67,9 @@ def verify(image, base, output):
                 raise ValueError('Nginx checksum mismatch')
             if nginx.count(b'location /spvm-api/') != 1 or b'http://127.0.0.1:18776/' not in nginx:
                 raise ValueError('Expected loopback SPVM proxy required')
+            if (manifest.get('request_origin_policy') != 'trusted-loopback-proxy-v1'
+                    or nginx.count(b'proxy_set_header X-SPVM-UI-Origin "$scheme://$http_host";') != 1):
+                raise ValueError('Matched, overwriting same-origin loopback proxy required')
     finally:
         docker('rm', container)
     output = Path(output)

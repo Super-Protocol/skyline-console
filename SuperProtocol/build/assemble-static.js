@@ -50,6 +50,7 @@ const lock = JSON.parse(read(path.join(__dirname, 'component-lock.json')));
 const manifest = {
   schema_version: 1,
   capability: 'prebuilt-openstack-images-v1',
+  request_origin_policy: 'trusted-loopback-proxy-v1',
   component: 'skyline-console',
   version: lock.component_version,
   source_commit: commit,
