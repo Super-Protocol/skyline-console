@@ -4,9 +4,8 @@ This directory owns the Super Protocol console extensions, standalone SPVM
 pages, container build inputs and release verification. The Nova driver,
 authenticated web API and privileged workers live in `spvm-openstack`.
 
-The fork starts at `9b839364f58a849e0a7d8e9b5b7c73a564b65cc3` on
-`stable/2026.2`. Work is developed on `feature/sync-with-swarm-cloud`;
-publishing does not merge it into `sp-main`.
+The fork is based on upstream `stable/2026.2`. Work is developed on
+`feature/sync-with-swarm-cloud`; publishing does not merge it into `sp-main`.
 
 Existing public SPVM page URLs are retained. Native Skyline changes are made
 in React source, not by modifying compiled JavaScript or inspecting the DOM.
@@ -14,8 +13,13 @@ Presentation links do not grant API permissions.
 
 ## Build and publication
 
-`SuperProtocol/build/component-lock.json` pins Node 22.23.4, Yarn Classic
-1.22.22, the Kolla revision, and the reviewed Linux/amd64 base manifests and
+Keep operator/build instructions independent of internal test runs. Do not add
+test reports, stand addresses, dated checkpoints, run transcripts or test counts
+to repository documentation. Exact component identities belong in source locks
+and generated release descriptors, not duplicated installation examples.
+
+`SuperProtocol/build/component-lock.json` pins the exact Node 22/Yarn Classic
+versions, Kolla revision, and reviewed Linux/amd64 base manifests and
 their distinct config IDs. A manifest digest is not a Docker image/config ID.
 The first trusted workflow dispatch mirrors the two reviewed bases to new GHCR
 packages without changing their manifests, configs or ordered layers. The
