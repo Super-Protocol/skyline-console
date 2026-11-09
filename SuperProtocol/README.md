@@ -39,8 +39,12 @@ validator. The nginx template is owned source, derived from the pinned Kolla
 revision; it retains the existing `/spvm-api/` loopback proxy on port 18776.
 
 The matched web backend requires `trusted-loopback-proxy-v1`. For SPVM API
-requests, nginx overwrites `X-SPVM-UI-Origin` from `$scheme://$http_host`; never
-preserve a client-provided value or drop the original Host port. The backend
+requests, nginx overwrites `X-SPVM-UI-Origin` with `https://$http_host`; never
+preserve a client-provided value or drop the original Host port. HTTPS is the
+server-owned public UI contract, also when the enrolled HAProxy terminates TLS
+before nginx. The internal HTTP hop is not the public scheme; client-supplied
+`Forwarded`/`X-Forwarded-Proto` headers do not select it. Plain HTTP browser
+writes remain forbidden. The backend
 accepts only HTTPS same-origin writes through controller loopback, followed by
 normal Skyline session and administrator checks. SSH tunnel local ports need
 not be enumerated. Do not expose the backend or bypass the proxy; additional

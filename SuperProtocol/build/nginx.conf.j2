@@ -89,9 +89,11 @@ http {
             proxy_connect_timeout 5s;
             proxy_read_timeout 120s;
             proxy_set_header Cookie $http_cookie;
-            # Overwrite, never trust client-supplied proxy origin headers. Keep
-            # the original Host port: SSH tunnels may use any local TLS port.
-            proxy_set_header X-SPVM-UI-Origin "$scheme://$http_host";
+            # Public SPVM UI is HTTPS-only, including when the reviewed
+            # HAProxy terminates TLS before this nginx. Never infer the public
+            # scheme from that internal hop or client-supplied forwarded headers.
+            # Preserve the browser-facing Host port used by SSH tunnels.
+            proxy_set_header X-SPVM-UI-Origin "https://$http_host";
             proxy_pass http://127.0.0.1:18776/;
         }
 
