@@ -92,7 +92,7 @@
         if(p.enabled)active.add(p.filesystem_id);
       }
       const summary=pools.map(p=>`${p.id}: ${p.enabled?'enabled':'disabled'} · ${p.path} · ${p.budget_gib} GiB + ${p.reserve_gib} GiB reserve`).join('\n')||'No registered pools';
-      if(prompt(`Apply pool configuration to ${host.host}?\n${summary}\nData will not be deleted or moved. A host without an enabled pool is UNCONFIGURED and cannot admit any new VM. The host remains disabled after applying changes.\nType ${host.host}:`)!==host.host)return;
+      if(!confirm(`Apply pool configuration to ${host.host}?\n${summary}\nData will not be deleted or moved. A host without an enabled pool is UNCONFIGURED and cannot admit any new VM. The host remains disabled after applying changes.`))return;
       const body={request_id:crypto.randomUUID(),host:host.host,generation:host.generation,pools};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();
       try {const response=await api('',body);await poll(response.request_id);}

@@ -94,7 +94,7 @@
           }
           return {address:device.address,enabled:enabled.checked,overrides};
         }),groups:groups.map(g=>({id:g.id,confirmed:g.confirmed.checked,mode:g.confirmed.checked?'ppcie':'unknown'})),experimental_nvswitch:experimental?experimental.checked:false};
-        if(prompt(`Apply GPU configuration to ${host.host}? Nova control services may restart briefly, affecting API access cluster-wide. On failure scheduling quarantine requires manual review. Type ${host.host}:`)!==host.host)return;
+        if(!confirm(`Apply GPU configuration to ${host.host}? Nova control services may restart briefly, affecting API access cluster-wide. On failure scheduling quarantine requires manual review.`))return;
         submit({kind:'configure',settings});
       }catch(e){status.textContent=e.message;}
     });

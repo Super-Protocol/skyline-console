@@ -153,7 +153,7 @@
         message.textContent='Each state budget and reserve must be positive whole GiB and fit the available filesystem space.';return;
       }
       const storage=resolved.pools.map(p=>`${p.id}: ${p.budget_gib} GiB budget / ${p.reserve_gib} GiB reserve`).join('\n');
-      if(prompt(`Apply limits to ${host.host}?\n${resolved.vcpus} vCPU / ${resolved.memory_mb} MiB RAM\n${storage}\nOnly an empty host is permitted; the host stays disabled until a separate Enable. Type ${host.host}:`)!==host.host)return;
+      if(!confirm(`Apply limits to ${host.host}?\n${resolved.vcpus} vCPU / ${resolved.memory_mb} MiB RAM\n${storage}\nOnly an empty host is permitted; the host stays disabled until a separate Enable.`))return;
       const body={host:host.host,generation:host.generation,budget,request_id:crypto.randomUUID()};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();message.textContent='Submitting explicit administrator request…';
       try {

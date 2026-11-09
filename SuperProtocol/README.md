@@ -57,6 +57,12 @@ stops polling and offers explicit dismissal of the browser record after review;
 it does not cancel/repeat a server action or assert that another cloud never ran
 that ID. Registered requests continue to wait for the protected worker result.
 
+CPU/RAM, storage-pool and GPU configuration changes use a standard confirmation
+dialog showing the target host and applicable warnings; typing the hostname is
+not required. Cancel leaves the draft untouched and submits no request. This
+confirmation does not replace administrator authorization, empty-host checks or
+protected worker validation.
+
 Only a trusted feature-branch push or workflow dispatch has package/release
 write permission. Pull requests have no publishing secrets or permissions.
 Component releases include full source SHA, CI run and attempt in their unique
