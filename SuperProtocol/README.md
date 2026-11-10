@@ -11,6 +11,12 @@ Existing public SPVM page URLs are retained. Native Skyline changes are made
 in React source, not by modifying compiled JavaScript or inspecting the DOM.
 Presentation links do not grant API permissions.
 
+Every standalone SPVM page displays the authenticated OpenStack project. New
+installations prepare the dedicated `SWARM` project for workload operations.
+Select it through Skyline's normal project selector: pages never switch scope
+or exchange a user's token silently. The context label uses the authenticated
+`/spvm-api/v1/project` response, not a browser-provided project name.
+
 **General settings** is linked from Hypervisors, host resources and releases.
 It controls debug-image registration and new launch policy for the enrolled
 compute fleet through `/spvm-api/v1/settings`. The matching backend and executors
