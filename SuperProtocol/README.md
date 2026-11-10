@@ -25,6 +25,29 @@ service restart is performed by the page. It preserves request IDs and uncertain
 outcomes, requires confirmation, and never retries automatically. Existing
 running guests, CC mode, resources and scheduling state are not changed.
 
+**General settings → Swarm UI publication** separately configures the allowed
+domain suffix, public IPv4 endpoint and installed ingress. It uses typed
+`/spvm-api/v1/publication-settings` requests, current generations, retained
+request IDs and a Yes/No confirmation. The initial state is `NOT_CONFIGURED`.
+The displayed local bind address is distinct from a public VIP/NAT/L4-LB
+address. No DNS keys or guest certificates are requested by this page.
+Swarm retains DNS/certificate management through provider-config.
+
+Managed creation defaults to `public`; explicitly choose `none` to skip
+publication. The form blocks public creation before configuration, not on DNS
+records that do not yet exist. Progress distinguishes instance readiness, DNS
+waiting, route application, HTTPS verification and `UI_READY`; VM ACTIVE alone
+does not expose a successful public UI link. New-format clusters created with
+`none` offer **Publish UI**, retaining the accepted request ID without replay.
+The matching backend must advertise `managed-swarm-publication-v1`; old or
+mixed components are rejected, not adapted. See the kit's
+`docs/OPENSTACK_PUBLICATION.md` for CLI/API and operational details.
+
+There is one ingress and one active writer, not HA. Disabling new publication
+preserves existing routes. Profile changes never silently rebind existing
+clusters; busy/uncertain operations require review. A stable profile UUID is an
+architectural boundary for future HA, not distributed fencing or failover.
+
 Native table extension links use an Ant Design Space so link-style buttons have
 the same visible separation as the adjacent native toolbar controls.
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "upstream_source": "9b839364f58a849e0a7d8e9b5b7c73a564b65cc3",
-  "component_version": "9.0.0-sp10",
+  "component_version": "9.0.0-sp11",
   "kolla_revision": "689533989dc27670e4fde6e0b313c5150b8efe7f",
   "nginx_source_sha256": "6766defad57a5540917659b5d531c36d97ab2332dcef00514c943bf735b167c4",
   "node_image": "docker.io/library/node@sha256:539d4d5b9c0df96bb9d1229264d358dc816e8592cb8867828a580b527e7ad0fa",

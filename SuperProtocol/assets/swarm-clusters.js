@@ -124,6 +124,37 @@
         card.append(panel);
       }
       const actions = element('div', undefined, 'actions');
+      const publication=cluster.publication;
+      actions.append(element('span','Public UI: '+(publication?.phase||publication?.status||'NOT_REQUESTED')));
+      if(cluster.can_publish){
+        const publish=element('button','Publish UI','button');publish.type='button';
+        const message=element('p',undefined,'publication-status');
+        publish.addEventListener('click',async()=>{
+          const key='spvm.clusterPublication.'+cluster.id;
+          if(sessionStorage.getItem(key)){
+            const saved=JSON.parse(sessionStorage.getItem(key));
+            try{
+              const r=await fetch('/spvm-api/v1/cluster-publications/'+encodeURIComponent(saved.request_id),{credentials:'same-origin',cache:'no-store',redirect:'error'});
+              const result=await r.json();if(!r.ok)throw Error('Unable to inspect the existing publication request');
+              message.textContent=`${result.phase||result.status}: ${result.message||''} Request: ${saved.request_id}`;
+              if(['REFUSED','NOT_FOUND'].includes(result.status)){sessionStorage.removeItem(key);message.textContent+=' Refresh and review before another request.';}
+            }catch(error){message.textContent=error.message+' Keep the existing request ID; no automatic replay.';}
+            return;
+          }
+          if(!confirm('Publish this cluster UI through the approved ingress? No VM will be restarted or recreated.'))return;
+          publish.disabled=true;let accepted=false;
+          try{
+            const response=await fetch('/spvm-api/v1/publication-settings',{credentials:'same-origin',cache:'no-store'});
+            const settings=await response.json();if(!response.ok)throw Error(settings.error||'Publication settings unavailable');
+            const body={cluster:cluster.id,generation:settings.generation,request_id:crypto.randomUUID()};
+            sessionStorage.setItem(key,JSON.stringify(body));
+            const r=await fetch('/spvm-api/v1/cluster-publications',{method:'POST',credentials:'same-origin',
+              headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            const result=await r.json();if(!r.ok){if(result.request_accepted===false)sessionStorage.removeItem(key);throw Error(result.error||'Publication refused');}
+            accepted=true;message.textContent='Publication requested. Request: '+result.request_id+'. Refresh clusters to inspect progress.';
+          }catch(error){message.textContent=error.message+' No automatic replay.';if(!accepted&&!sessionStorage.getItem(key))publish.disabled=false;}
+        });actions.append(publish,message);
+      }
       if (cluster.url) {
         // Defense in depth: links are DNS-only HTTPS origins, never arbitrary
         // metadata URLs or javascript:/credential-bearing destinations.

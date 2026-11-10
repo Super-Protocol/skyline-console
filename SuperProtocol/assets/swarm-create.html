@@ -42,6 +42,10 @@
     <label for="pki_domain">PKI DNS name</label><input id="pki_domain" type="text" maxlength="253" placeholder="ca.&lt;swarm DNS name&gt;" disabled>
     <button id="suggest-domains" type="button" disabled>Use suggested names</button>
     <p id="domains"></p>
+    <label for="publication-mode">Swarm UI publication</label>
+    <select id="publication-mode" disabled><option value="public" selected>Public UI — publish and verify HTTPS</option><option value="none">No public UI publication</option></select>
+    <p id="publication-readiness"></p>
+    <p><a href="/spvm-settings.html#publication-settings">Configure Swarm UI publication (administrator)</a></p>
     <label for="image">SPVM image</label><select id="image" required disabled></select>
     <p><a href="/swarm-releases.html" target="_blank" rel="noopener">Register SPVM release (administrator)</a>.
       Reload this form after registering a release.</p>
@@ -55,7 +59,8 @@
   </form>
   <p id="status" role="status" aria-live="polite">Loading approved configurations…</p>
   <p>Resource checks are advisory, not reservations. Failed or interrupted creation
-    retains its resources for review. Public DNS/TLS/ingress publication remains
-    an operator step; instance readiness alone does not mean the public Swarm UI is reachable.</p>
+    retains its resources for review. In public mode the configured publisher
+    waits for Swarm DNS and verifies public HTTPS after instance readiness;
+    instance readiness alone does not mean the public Swarm UI is reachable.</p>
 </main></body>
 </html>

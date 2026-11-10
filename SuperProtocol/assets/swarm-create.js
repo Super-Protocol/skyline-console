@@ -28,13 +28,18 @@
   function controls(disabled) {
     busy = disabled;
     for (const id of ['template', 'name', 'image', 'submit', 'add-node', 'swarm_domain', 'pki_domain', 'suggest-domains',
-      'view-template', 'new-template', 'template-name', 'provider-directory', 'save-template', 'cancel-template']) $(id).disabled = disabled;
+      'view-template', 'new-template', 'template-name', 'provider-directory', 'save-template', 'cancel-template','publication-mode']) $(id).disabled = disabled;
     for (const node of $('nodes').querySelectorAll('select, button')) node.disabled = disabled;
     $('add-node').disabled = disabled || nodeProfiles.length >= 16;
     $('new-template').disabled = disabled || !catalog.can_create_template;
     $('view-template').disabled = disabled || !catalog.templates.length;
     $('save-template').disabled = disabled || !catalog.can_create_template;
     $('submit').disabled = disabled || $('template-editor').hidden === false || !catalog.templates.length || !catalog.images.length || !catalog.profiles.length;
+    const publication=catalog.publication;
+    const ready=publication?.status==='ENABLED'&&!publication.blockers.length;
+    if($('publication-mode').value==='public'&&!ready)$('submit').disabled=true;
+    $('publication-readiness').textContent=$('publication-mode').value==='none'?'Public UI will not be published.':
+      ready?'Publication configured; Swarm DNS and public HTTPS will be checked after VM readiness.':catalog.publication_error||'Public UI publication is not configured. Open General settings or explicitly choose no publication.';
   }
   function domains() {
     const template = catalog.templates.find(t => t.id === $('template').value);
@@ -101,7 +106,7 @@
       if (operation.publication === 'UI_READY') {
         $('status').textContent += '\nPublic Swarm UI is ready: ' + operation.url;
       } else {
-        $('status').textContent += '\nInstances are ready. Public DNS/TLS/ingress publication still requires the operator. Open Swarm Clusters to inspect them.';
+        $('status').textContent += '\nInstances are ready. No public UI publication was requested.';
       }
       // Do not immediately permit a second click on the completed form.
     } else if (operation.status === 'REVIEW_REQUIRED') {
@@ -185,6 +190,7 @@
     }
   });
   $('name').addEventListener('input', domains);
+  $('publication-mode').addEventListener('change',()=>controls(busy));
   for (const id of ['swarm_domain', 'pki_domain']) $(id).addEventListener('input', () => {
     automaticDomains[id] = false; domains();
   });
@@ -203,6 +209,7 @@
     if (busy || !confirm(`Create ${$('name').value} with ${nodeProfiles.length} new VMs?`)) return;
     pending = {template: $('template').value, name: $('name').value, image: $('image').value,
       profiles: [...nodeProfiles], request_id: crypto.randomUUID(),
+      publication_mode: $('publication-mode').value,
       hosts: nodeProfiles.map((_, index) => nodeHosts[index] || ''),
       swarm_domain: $('swarm_domain').value.trim().toLowerCase(),
       pki_domain: $('pki_domain').value.trim().toLowerCase()};
@@ -222,6 +229,7 @@
     const saved = sessionStorage.getItem(storageKey);
     if (saved) {
       pending = JSON.parse(saved); $('name').value = pending.name;
+      $('publication-mode').value=pending.publication_mode;
       $('template').value = pending.template; $('image').value = pending.image;
       nodeProfiles.splice(0, nodeProfiles.length, ...pending.profiles);
       nodeHosts.splice(0, nodeHosts.length, ...(pending.hosts || pending.profiles.map(() => ''))); renderNodes();
