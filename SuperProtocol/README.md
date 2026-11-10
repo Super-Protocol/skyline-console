@@ -22,6 +22,26 @@ running guests, CC mode, resources and scheduling state are not changed.
 Native table extension links use an Ant Design Space so link-style buttons have
 the same visible separation as the adjacent native toolbar controls.
 
+## Compute capacity display
+
+Hypervisor lists, details and the administrator overview distinguish Placement
+allocations from the workload budget, host reserve and Nova-reported host total.
+Allocated capacity comes from root-provider usages, not Nova's legacy used
+counters, which can include host reserves even when no VMs exist. CPU and RAM
+budget is `floor((inventory.total - inventory.reserved) * allocation_ratio)`.
+Reserves are outside that budget and never inflate the allocation indicator.
+VCPU and PCPU pools are displayed separately; the overview sums CPU slots,
+not physical-core utilization. Ratios other than one are shown explicitly.
+
+These are scheduling allocations, not live CPU load or physically consumed RAM.
+Reservations and migrations can retain allocations even with no running guests.
+Host totals are not multiplied by allocation ratios. RAM is displayed in GiB
+using 1024 MiB per GiB. A fully reserved inventory has zero workload budget;
+an absent inventory is shown as not advertised, not fabricated free capacity.
+Placement failures or inconsistent observations are errors, never successful
+zero-use readings. Refresh after an inventory change. These read-only UI
+calculations do not change inventories, budgets, scheduling or running guests.
+
 ## Build and publication
 
 Keep operator/build instructions independent of internal test runs. Do not add

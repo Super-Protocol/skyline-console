@@ -18,6 +18,11 @@ import { get } from 'lodash';
 import client from 'client';
 import Base from 'stores/base';
 import { getVirtualGpuCapacity } from '../../../SuperProtocol/src/vgpu';
+import {
+  getComputeCapacity,
+  withComputeCapacity,
+  capacityOverview,
+} from '../../../SuperProtocol/src/compute-capacity';
 
 export class HypervisorStore extends Base {
   @observable
@@ -44,61 +49,16 @@ export class HypervisorStore extends Base {
     };
   }
 
-  // get mapper() {
-  //   return (item) => {
-  //     item.vcpus_used_percent = ((item.vcpus_used / item.vcpus) * 100).toFixed(2);
-  //     item.memory_mb_percent = ((item.memory_mb_used / item.memory_mb) * 100).toFixed(2);
-  //     item.storage_percent = ((item.local_gb_used / item.local_gb) * 100).toFixed(2);
-  //     item.memory_mb_used_gb = getGiBValue(item.memory_mb_used);
-  //     item.memory_mb_gb = getGiBValue(item.memory_mb);
-  //     return item;
-  //   };
-  // }
-
-  async listDidFetch(items, all_projects, filters) {
+  async listDidFetch(items, all_projects, filters = {}) {
     const { simple } = filters;
     if (simple) {
       return items;
     }
-    const requestList = items.map((it) =>
-      this.providerClient.inventories.list(it.id)
+    const capacities = await Promise.all(
+      items.map((item) => getComputeCapacity(this.providerClient, item))
     );
-    const inventories = await Promise.all(requestList);
-    const result = items.map((item, index) => {
-      if (item.hypervisor_type !== 'ironic') {
-        const {
-          inventories: {
-            VCPU: { allocation_ratio, total: vcpu_total } = {},
-            PCPU: { allocation_ratio: pcpu_ratio, total: pcpu_total } = {},
-            MEMORY_MB: { allocation_ratio: memory_ratio } = {},
-          } = {},
-        } = inventories[index] || {};
-        // Handle mixed VCPU/PCPU configurations
-        let total_vcpus = 0;
-        let cpu_types = [];
-
-        if (pcpu_total !== undefined) {
-          total_vcpus += pcpu_total * (pcpu_ratio || 1.0);
-          cpu_types.push('pCPU');
-        }
-        if (allocation_ratio && vcpu_total !== undefined) {
-          total_vcpus += vcpu_total * allocation_ratio;
-          cpu_types.push('vCPU');
-        }
-        if (total_vcpus > 0) {
-          item.vcpus = total_vcpus;
-          item.cpu_type = cpu_types.join('+');
-        }
-        if (memory_ratio) {
-          item.memory_mb *= memory_ratio;
-        }
-      }
-      item.vcpus_used_percent =
-        (item.vcpus && ((item.vcpus_used / item.vcpus) * 100).toFixed(2)) || 0;
-      item.memory_mb_percent =
-        (item.memory_mb &&
-          ((item.memory_mb_used / item.memory_mb) * 100).toFixed(2)) ||
-        0;
+    const result = items.map((host, index) => {
+      const item = withComputeCapacity(host, capacities[index]);
       item.storage_percent =
         (item.local_gb &&
           ((item.local_gb_used / item.local_gb) * 100).toFixed(2)) ||
@@ -113,113 +73,52 @@ export class HypervisorStore extends Base {
   @action
   async fetchDetail({ id, all_projects }) {
     this.isLoading = true;
-    const result = await this.client.show(id);
-    const originData = get(result, this.responseKey) || result;
-    const item = this.mapperBeforeFetchProject(originData);
-    const { resource_providers } = await this.providerClient.list({
-      in_tree: id,
-    });
-    const provider = (resource_providers || []).filter((it) => it.uuid !== id);
-    const [inventoriesBase, virtualGpu] = await Promise.all([
-      this.providerClient.inventories.list(id),
-      getVirtualGpuCapacity(this.providerClient, provider),
-    ]);
-    if (item.hypervisor_type !== 'ironic') {
-      const {
-        inventories: {
-          VCPU: { allocation_ratio, total: vcpu_total } = {},
-          PCPU: { allocation_ratio: pcpu_ratio, total: pcpu_total } = {},
-          MEMORY_MB: { allocation_ratio: memory_ratio } = {},
-        } = {},
-      } = inventoriesBase || {};
-      // Handle mixed VCPU/PCPU configurations
-      let total_vcpus = 0;
-      let cpu_types = [];
-
-      if (pcpu_total !== undefined) {
-        total_vcpus += pcpu_total * (pcpu_ratio || 1.0);
-        cpu_types.push('pCPU');
-      }
-      if (allocation_ratio && vcpu_total !== undefined) {
-        total_vcpus += vcpu_total * allocation_ratio;
-        cpu_types.push('vCPU');
-      }
-      if (total_vcpus > 0) {
-        item.vcpus = total_vcpus;
-        item.cpu_type = cpu_types.join('+');
-      }
-      if (memory_ratio) {
-        item.memory_mb *= memory_ratio;
-      }
+    try {
+      const result = await this.client.show(id);
+      const originData = get(result, this.responseKey) || result;
+      let item = this.mapperBeforeFetchProject(originData);
+      const { resource_providers } = await this.providerClient.list({
+        in_tree: id,
+      });
+      const provider = (resource_providers || []).filter(
+        (it) => it.uuid !== id
+      );
+      const [capacity, virtualGpu] = await Promise.all([
+        getComputeCapacity(this.providerClient, item),
+        getVirtualGpuCapacity(this.providerClient, provider),
+      ]);
+      item = withComputeCapacity(item, capacity);
+      Object.assign(item, virtualGpu);
+      item.memory_mb_used_gb = getGiBValue(item.memory_mb_used);
+      item.memory_mb_gb = getGiBValue(item.memory_mb);
+      const newItem = await this.detailDidFetch(item, all_projects);
+      const detail = this.mapper(newItem);
+      this.detail = detail;
+      return detail;
+    } finally {
+      this.isLoading = false;
     }
-    Object.assign(item, virtualGpu);
-    item.memory_mb_used_gb = getGiBValue(item.memory_mb_used);
-    item.memory_mb_gb = getGiBValue(item.memory_mb);
-    const newItem = await this.detailDidFetch(item, all_projects);
-    const detail = this.mapper(newItem);
-    this.detail = detail;
-    this.isLoading = false;
-    return detail;
   }
 
   @action
   getVirtualResource = async () => {
     this.isLoading = true;
-    const hypervisorResult = await this.client.listDetail();
-    const { hypervisors } = hypervisorResult;
-    const data = {
-      vcpus: 0,
-      vcpus_used: 0,
-      memory_mb: 0,
-      memory_mb_used: 0,
-      local_gb: 0,
-      local_gb_used: 0,
-    };
-    const requestList = hypervisors.map((it) =>
-      this.providerClient.inventories.list(it.id)
-    );
-    const inventories = await Promise.all(requestList);
-    hypervisors.forEach((item, index) => {
-      if (item.hypervisor_type !== 'ironic') {
-        const {
-          inventories: {
-            VCPU: { allocation_ratio, total: vcpu_total } = {},
-            PCPU: { allocation_ratio: pcpu_ratio, total: pcpu_total } = {},
-            MEMORY_MB: { allocation_ratio: memory_ratio } = {},
-          } = {},
-        } = inventories[index] || {};
-        // Handle mixed VCPU/PCPU configurations
-        let total_vcpus = 0;
-        let cpu_types = [];
-
-        if (pcpu_total !== undefined) {
-          total_vcpus += pcpu_total * (pcpu_ratio || 1.0);
-          cpu_types.push('pCPU');
-        }
-        if (allocation_ratio && vcpu_total !== undefined) {
-          total_vcpus += vcpu_total * allocation_ratio;
-          cpu_types.push('vCPU');
-        }
-        if (total_vcpus > 0) {
-          item.vcpus = total_vcpus;
-          item.cpu_type = cpu_types.join('+');
-        }
-        if (memory_ratio) {
-          item.memory_mb *= memory_ratio;
-        }
-      }
-      data.vcpus += item.vcpus;
-      data.vcpus_used += item.vcpus_used;
-      data.memory_mb += getGiBValue(item.memory_mb);
-      data.memory_mb_used += getGiBValue(item.memory_mb_used);
-      // fetch storage info from prometheus
-      // data.local_gb += item.local_gb;
-      // data.local_gb_used += item.local_gb_used;
-      // fetch storage info from prometheus
-    });
-
-    this.overview = data;
-    this.isLoading = false;
+    try {
+      const hypervisorResult = await this.client.listDetail();
+      const { hypervisors } = hypervisorResult;
+      const capacities = await Promise.all(
+        hypervisors.map((item) => getComputeCapacity(this.providerClient, item))
+      );
+      this.overview = capacityOverview(
+        hypervisors.map((host, index) =>
+          withComputeCapacity(host, capacities[index])
+        )
+      );
+    } catch (error) {
+      this.overview = { complete: false, error: true };
+    } finally {
+      this.isLoading = false;
+    }
   };
 }
 

@@ -21,12 +21,16 @@ export const resourceCircle = [
   {
     resource: 'vcpus',
     used: 'vcpus_used',
-    label: t('CPU Usage (Core)'),
+    label: t('CPU allocation (slots)'),
+    reserve: 'cpu_reserved',
+    physical: 'cpu_physical',
   },
   {
     resource: 'memory_mb',
     used: 'memory_mb_used',
-    label: t('Memory Usage (GiB)'),
+    label: t('RAM allocation (GiB)'),
+    reserve: 'memory_reserved',
+    physical: 'memory_physical',
   },
 ];
 
@@ -51,10 +55,24 @@ export class ResourceCircle extends Component {
 
   renderCircle = (item, index) => {
     const { overview } = this.props.store;
+    if (overview.complete !== true) {
+      return (
+        <Col span={this.resourceCircleSpan} key={item.resource}>
+          {overview.error
+            ? t('Unable to load Placement resource capacity')
+            : t('Unknown')}
+        </Col>
+      );
+    }
     const resource = overview[item.resource];
 
     const used = overview[item.used];
-    const percentNum = parseFloat(((used / resource) * 100).toFixed(2));
+    const percentNum =
+      resource > 0
+        ? parseFloat(((used / resource) * 100).toFixed(2))
+        : used > 0
+        ? 100
+        : 0;
     const unUsed = parseFloat((resource - used).toFixed(2));
     let circleColor = color.infoColor;
     if (percentNum > 70) {
@@ -88,7 +106,7 @@ export class ResourceCircle extends Component {
                 backgroundColor: circleColor,
               }}
             />
-            {`${t('Used')}: ${used}`}
+            {`${t('Allocated')}: ${used}`}
           </Col>
           <Col span={12} style={{ textAlign: 'left', paddingLeft: 20 }}>
             <Avatar
@@ -100,9 +118,12 @@ export class ResourceCircle extends Component {
                 backgroundColor: '##A3A3A3',
               }}
             />
-            {`${t('Unused')}: ${unUsed > 0 ? unUsed : '0'}`}
+            {`${t('Unallocated budget')}: ${unUsed > 0 ? unUsed : '0'}`}
           </Col>
         </Row>
+        <div>{`${t('Budget')}: ${resource} · ${t('Host reserve')}: ${
+          overview[item.reserve]
+        } · ${t('Host total')}: ${overview[item.physical]}`}</div>
       </Col>
     );
   };
@@ -113,7 +134,7 @@ export class ResourceCircle extends Component {
       <Card
         loading={isLoading}
         className={styles.chart}
-        title={t('Virtual Resources Used')}
+        title={t('Compute resource allocations')}
         bordered={false}
       >
         <Descriptions column={1}>

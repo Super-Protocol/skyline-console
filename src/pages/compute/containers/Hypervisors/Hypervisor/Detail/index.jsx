@@ -17,7 +17,7 @@ import { inject, observer } from 'mobx-react';
 import { HypervisorStore } from 'stores/nova/hypervisor';
 import Base from 'containers/TabDetail';
 import Members from 'pages/compute/containers/Instance';
-import { Tooltip } from 'antd';
+import ComputeCapacity from '../../../../../../../SuperProtocol/src/ComputeCapacity';
 
 export class HypervisorDetail extends Base {
   get name() {
@@ -43,32 +43,14 @@ export class HypervisorDetail extends Base {
         dataIndex: 'hypervisor_type',
       },
       {
-        title: t('CPU (Core)'),
+        title: t('CPU allocation'),
         dataIndex: 'vcpus_used_percent',
-        render: (value, record) =>
-          record.hypervisor_type === 'ironic' ? (
-            <Tooltip
-              title={t('vCPUs and RAM are not used for bare metal scheduling.')}
-            >
-              <span>-</span>
-            </Tooltip>
-          ) : (
-            `${record.vcpus_used} / ${record.vcpus} (${t(record.cpu_type || 'vCPU')})`
-          ),
+        render: (value, record) => <ComputeCapacity record={record} />,
       },
       {
-        title: t('Configured Memory (GiB)'),
+        title: t('RAM allocation (GiB)'),
         dataIndex: 'memory_mb_percent',
-        render: (value, record) =>
-          record.hypervisor_type === 'ironic' ? (
-            <Tooltip
-              title={t('vCPUs and RAM are not used for bare metal scheduling.')}
-            >
-              <span>-</span>
-            </Tooltip>
-          ) : (
-            `${record.memory_mb_used_gb} / ${record.memory_mb_gb}`
-          ),
+        render: (value, record) => <ComputeCapacity record={record} memory />,
       },
     ];
     const { vgpus, vgpus_used } = this.store.detail;

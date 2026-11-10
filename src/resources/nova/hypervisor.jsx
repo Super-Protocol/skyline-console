@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import React from 'react';
-import Progress from 'components/Progress';
-import { Tooltip } from 'antd';
+import ComputeCapacity, {
+  computeCapacityText,
+} from '../../../SuperProtocol/src/ComputeCapacity';
 
 export const hypervisorColumns = [
   {
@@ -26,52 +27,18 @@ export const hypervisorColumns = [
     dataIndex: 'hypervisor_type',
   },
   {
-    title: t('CPU (Core)'),
+    title: t('CPU allocation'),
     dataIndex: 'vcpus_used_percent',
-    render: (value, record) =>
-      record.hypervisor_type === 'ironic' ? (
-        <Tooltip
-          title={t('vCPUs and RAM are not used for bare metal scheduling.')}
-        >
-          <span>-</span>
-        </Tooltip>
-      ) : (
-        <Tooltip title={`${t(record.cpu_type || 'vCPU')}: ${record.vcpus_used} / ${record.vcpus}`}>
-          <Progress
-            value={value}
-            label={`${record.vcpus_used} / ${record.vcpus}`}
-          />
-        </Tooltip>
-      ),
-    width: 180,
-    stringify: (value, record) =>
-      record.hypervisor_type === 'ironic'
-        ? '-'
-        : `${value}% (${t(record.cpu_type || 'vCPU')}: ${record.vcpus_used} / ${record.vcpus})`,
+    render: (value, record) => <ComputeCapacity record={record} />,
+    width: 280,
+    stringify: (value, record) => computeCapacityText(record),
   },
   {
-    title: t('Configured Memory (GiB)'),
+    title: t('RAM allocation (GiB)'),
     dataIndex: 'memory_mb_percent',
-    render: (value, record) =>
-      record.hypervisor_type === 'ironic' ? (
-        <Tooltip
-          title={t('vCPUs and RAM are not used for bare metal scheduling.')}
-        >
-          <span>-</span>
-        </Tooltip>
-      ) : (
-        <Progress
-          value={value}
-          label={`${record.memory_mb_used_gb} / ${record.memory_mb_gb}`}
-        />
-      ),
-    width: 180,
-    stringify: (value, record) =>
-      record.hypervisor_type === 'ironic'
-        ? '-'
-        : `${value}% (${t('Used')}: ${record.memory_mb_used_gb} / ${t(
-            'Total'
-          )}: ${record.memory_mb_gb})`,
+    render: (value, record) => <ComputeCapacity record={record} memory />,
+    width: 280,
+    stringify: (value, record) => computeCapacityText(record, true),
   },
   {
     title: t('Instances'),
