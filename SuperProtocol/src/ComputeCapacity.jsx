@@ -15,7 +15,7 @@ export function computeCapacityText(record, memory = false) {
   const capacity = memory
     ? record.compute_capacity?.memory
     : record.compute_capacity?.cpu;
-  if (!capacity) return t('Unknown');
+  if (!capacity) return t('Unable to load Placement resource capacity');
   const pools = memory ? [capacity.pool].filter(Boolean) : capacity.pools;
   const parts = pools.map(
     (pool) =>
@@ -48,7 +48,13 @@ export default function ComputeCapacity({ record, memory = false }) {
   const capacity = memory
     ? record.compute_capacity?.memory
     : record.compute_capacity?.cpu;
-  if (!capacity) return <span>{t('Unknown')}</span>;
+  if (!capacity) {
+    return (
+      <span role="alert">
+        {t('Unable to load Placement resource capacity')}
+      </span>
+    );
+  }
   const pools = memory ? [capacity.pool].filter(Boolean) : capacity.pools;
   return (
     <div data-spvm-resource={memory ? 'memory' : 'cpu'}>
