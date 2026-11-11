@@ -13,8 +13,11 @@ Presentation links do not grant API permissions.
 
 Every standalone SPVM page displays the authenticated OpenStack project. New
 installations prepare the dedicated `SWARM` project for workload operations.
-Select it through Skyline's normal project selector: pages never switch scope
-or exchange a user's token silently. The context label uses the authenticated
+Password and TOTP login prefer its protected UUID if it is already an enabled
+project accessible to that user. This is an initial login preference, not a
+membership grant or a name lookup. Users without SWARM access keep an accessible
+project. Manual selection through Skyline's normal project selector is retained;
+page refresh and standalone SPVM pages never force a project switch. The context label uses the authenticated
 `/spvm-api/v1/project` response, not a browser-provided project name.
 
 **General settings** is linked from Hypervisors, host resources and releases.
@@ -92,6 +95,19 @@ an absent inventory is shown as not advertised, not fabricated free capacity.
 Placement failures or inconsistent observations are errors, never successful
 zero-use readings. Refresh after an inventory change. These read-only UI
 calculations do not change inventories, budgets, scheduling or running guests.
+
+**GPU allocation** shows whole physical cards detected, assigned to OpenStack,
+in use/reserved and free, plus model/device display labels. It uses one batched
+authenticated `/spvm-api/v1/hypervisor-gpus` read, matched by compute UUID rather
+than a display name. Counts include allocations from all projects but disclose
+no other project's instance IDs. vGPU remains a separate resource; NVSwitch
+auxiliary PCI functions are not counted as physical cards. The matched worker
+validates Nova PCI claims against stable Placement observations. Stale, denied,
+missing or inconsistent observations show unknown use/free counts, not zero;
+they do not hide the hypervisor table. Free capacity is not launch admission
+and does not override host Enable/Disable. This is not GPU utilization telemetry.
+The console and backend must support `hypervisor-gpu-summary-v1` and the login
+contract `swarm-default-login-v1`; mixed release components are rejected.
 
 ## Build and publication
 

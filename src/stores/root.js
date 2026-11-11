@@ -126,6 +126,26 @@ export class RootStore {
     this.totpLoginData = null;
     const result = await this.client.login(params);
     this.setKeystoneToken(result);
+    return this.completeLogin();
+  }
+
+  async completeLogin() {
+    const { initialWorkloadProject, workloadProjectInformation } = await import(
+      '../../SuperProtocol/src/workload-project'
+    );
+    const profile = await this.client.profile();
+    const target = initialWorkloadProject(
+      profile,
+      await workloadProjectInformation()
+    );
+    if (target) {
+      const result = await this.client.switchProject(
+        target.id,
+        target.domainId
+      );
+      this.clearData();
+      this.setKeystoneToken(result);
+    }
     return this.getUserProfileAndPolicy();
   }
 
@@ -149,7 +169,7 @@ export class RootStore {
     this.totpReceipt = null;
     this.totpLoginData = null;
     this.setKeystoneToken(result);
-    return this.getUserProfileAndPolicy();
+    return this.completeLogin();
   }
 
   async getUserSystemRoles(user) {

@@ -17,6 +17,7 @@ import { action, observable } from 'mobx';
 import { get } from 'lodash';
 import client from 'client';
 import Base from 'stores/base';
+import { getGpuCapacities } from '../../../SuperProtocol/src/gpu-capacity';
 import { getVirtualGpuCapacity } from '../../../SuperProtocol/src/vgpu';
 import {
   getComputeCapacity,
@@ -54,11 +55,15 @@ export class HypervisorStore extends Base {
     if (simple) {
       return items;
     }
-    const capacities = await Promise.all(
-      items.map((item) => getComputeCapacity(this.providerClient, item))
-    );
+    const [capacities, gpuCapacities] = await Promise.all([
+      Promise.all(
+        items.map((item) => getComputeCapacity(this.providerClient, item))
+      ),
+      getGpuCapacities(),
+    ]);
     const result = items.map((host, index) => {
       const item = withComputeCapacity(host, capacities[index]);
+      item.gpu_capacity = gpuCapacities[host.id] || null;
       item.storage_percent =
         (item.local_gb &&
           ((item.local_gb_used / item.local_gb) * 100).toFixed(2)) ||

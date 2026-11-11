@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import React from 'react';
+import GpuCapacity, {
+  gpuCapacityText,
+} from '../../../SuperProtocol/src/GpuCapacity';
 import ComputeCapacity, {
   computeCapacityText,
 } from '../../../SuperProtocol/src/ComputeCapacity';
@@ -43,6 +46,13 @@ export const hypervisorColumns = [
   {
     title: t('Instances'),
     dataIndex: 'running_vms',
+  },
+  {
+    title: t('GPU allocation'),
+    dataIndex: 'gpu_capacity',
+    width: 300,
+    render: (value, record) => <GpuCapacity record={record} />,
+    stringify: (value, record) => gpuCapacityText(record),
   },
 ];
 

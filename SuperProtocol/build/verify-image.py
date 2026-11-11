@@ -49,6 +49,9 @@ def verify(image, base, output):
             nginx = metadata.extractfile(members['nginx.conf.j2']).read()
         with copied_tree(container, STATIC) as archive:
             expected = manifest['asset_sha256']
+            if (manifest.get('hypervisor_gpu_api') != 'hypervisor-gpu-summary-v1'
+                    or manifest.get('default_project_policy') != 'swarm-default-login-v1'):
+                raise ValueError('Matched physical GPU summary and SWARM login contracts required')
             if (manifest.get('settings_api') != 'typed-general-settings-v1'
                     or not {'spvm-settings.html','spvm-settings.js'} <= set(expected)):
                 raise ValueError('Matched General settings page/API contract required')
