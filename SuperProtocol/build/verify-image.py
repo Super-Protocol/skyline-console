@@ -52,7 +52,7 @@ def verify(image, base, output):
             if (manifest.get('settings_api') != 'typed-general-settings-v1'
                     or not {'spvm-settings.html','spvm-settings.js'} <= set(expected)):
                 raise ValueError('Matched General settings page/API contract required')
-            if (manifest.get('publication_api') != 'managed-swarm-publication-v1'
+            if (manifest.get('publication_api') != 'managed-swarm-publication-v2'
                     or not {'spvm-publication-settings.js','swarm-create.html','swarm-create.js','swarm-clusters.js'} <= set(expected)):
                 raise ValueError('Matched managed Swarm publication page/API contract required')
             entries = {m.name.removeprefix('./'): m for m in archive if not m.isdir()}

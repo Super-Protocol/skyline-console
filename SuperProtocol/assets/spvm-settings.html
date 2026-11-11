@@ -34,7 +34,9 @@
       This service only publishes HTTP/TLS-SNI routes and verifies public HTTPS. One ingress and one writer are supported; this is not HA.</p>
     <form id="publication-form"><fieldset id="publication-fields" disabled>
       <label class="check-field"><input id="publication-enabled" type="checkbox"> Allow new public UI publications</label>
-      <label class="field">Allowed domain suffix<input id="publication-domain" required placeholder="swarm.example.org"></label>
+      <label class="field">Allowed domain suffixes<input id="publication-domain" required maxlength="8192" aria-describedby="publication-domain-help" placeholder="swarm.example.org; example.net — or *"></label>
+      <p id="publication-domain-help">Separate zones with ; (up to 32). Use * alone to allow any domain: this disables the domain-zone restriction,
+        not DNS, approved ingress address or trusted HTTPS checks. Wildcard patterns such as *.example.org are not supported.</p>
       <label class="field">Public ingress IPv4 addresses<input id="publication-addresses" required placeholder="Comma-separated addresses of ingress, VIP or external L4 load balancer"></label>
       <label class="field">Managed ingress<select id="publication-ingress" required></select></label>
       <p id="publication-bind"></p>

@@ -52,7 +52,7 @@ const manifest = {
   capability: 'prebuilt-openstack-images-v1',
   request_origin_policy: 'trusted-loopback-proxy-v1',
   settings_api: 'typed-general-settings-v1',
-  publication_api: 'managed-swarm-publication-v1',
+  publication_api: 'managed-swarm-publication-v2',
   component: 'skyline-console',
   version: lock.component_version,
   source_commit: commit,

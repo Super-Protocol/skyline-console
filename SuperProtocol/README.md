@@ -26,7 +26,13 @@ outcomes, requires confirmation, and never retries automatically. Existing
 running guests, CC mode, resources and scheduling state are not changed.
 
 **General settings → Swarm UI publication** separately configures the allowed
-domain suffix, public IPv4 endpoint and installed ingress. It uses typed
+domain suffixes, public IPv4 endpoint and installed ingress. Enter up to 32
+distinct zones separated by `;`, or an explicit standalone `*` to allow any
+domain. Wildcard cannot be mixed with zones; patterns such as `*.example.org`
+are not accepted. The unrestricted choice has an explicit confirmation warning
+and is never the default. It relaxes only the zone allowlist, not project or
+provider-template authority, DNS/approved ingress matching, or trusted HTTPS.
+The API stores a `domain_suffixes` array, not delimiter-separated text. It uses typed
 `/spvm-api/v1/publication-settings` requests, current generations, retained
 request IDs and a Yes/No confirmation. The initial state is `NOT_CONFIGURED`.
 The displayed local bind address is distinct from a public VIP/NAT/L4-LB
@@ -39,7 +45,7 @@ records that do not yet exist. Progress distinguishes instance readiness, DNS
 waiting, route application, HTTPS verification and `UI_READY`; VM ACTIVE alone
 does not expose a successful public UI link. New-format clusters created with
 `none` offer **Publish UI**, retaining the accepted request ID without replay.
-The matching backend must advertise `managed-swarm-publication-v1`; old or
+The matching backend must advertise `managed-swarm-publication-v2`; old or
 mixed components are rejected, not adapted. See the kit's
 `docs/OPENSTACK_PUBLICATION.md` for CLI/API and operational details.
 
