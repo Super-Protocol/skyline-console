@@ -39,6 +39,15 @@ The displayed local bind address is distinct from a public VIP/NAT/L4-LB
 address. No DNS keys or guest certificates are requested by this page.
 Swarm retains DNS/certificate management through provider-config.
 
+**Swarm Clusters → Delete cluster** permanently removes that cluster's VMs and
+ingress routes, not Stop/Pause. Exact-name confirmation explicitly warns that DNS
+records remain for separate administrator cleanup. The API requires
+`dns_cleanup=external`; a matching `managed-cluster-retirement-external-dns-v1`
+backend/worker is required. No DNS keys are requested. Request IDs survive reload;
+uncertain outcomes never trigger automatic replay. Remove stale DNS records
+before reusing domains or public addresses. Shared networks, templates, images,
+flavors and other clusters remain unchanged.
+
 Managed creation defaults to `public`; explicitly choose `none` to skip
 publication. The form blocks public creation before configuration, not on DNS
 records that do not yet exist. Progress distinguishes instance readiness, DNS

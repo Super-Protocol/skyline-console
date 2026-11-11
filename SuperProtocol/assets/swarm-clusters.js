@@ -10,9 +10,9 @@
     let request;
     try { request = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (_) { return; }
     if (!request) {
-      const name = prompt(`Permanently delete ${cluster.name}? All cluster VMs and their encrypted data will be lost. This is not Stop/Pause. Type the exact cluster name:`);
+      const name = prompt(`Permanently delete ${cluster.name}? All cluster VMs and their encrypted data will be lost; ingress routes will be removed. DNS records will NOT be deleted: remove them separately through your DNS administrator. This is not Stop/Pause. Type the exact cluster name:`);
       if (name !== cluster.name) { message.textContent = 'Deletion cancelled: exact cluster name required.';return; }
-      request = {cluster: cluster.id, name, request_id: crypto.randomUUID()};
+      request = {cluster: cluster.id, name, request_id: crypto.randomUUID(), dns_cleanup: 'external'};
       sessionStorage.setItem(key, JSON.stringify(request));
     }
     deleting.add(cluster.id);button.disabled = true;
@@ -42,7 +42,7 @@
     message.textContent = `Deletion: ${value.status} · ${value.phase}`;
     if (value.status === 'SUCCEEDED') {
       sessionStorage.removeItem('spvm.pendingClusterDeletion.' + cluster);
-      message.textContent += '\nCluster retirement completed. Shared networks, templates, images and flavors were preserved.';
+      message.textContent += '\nCluster VMs and ingress routes were removed. DNS records were NOT deleted: remove them separately. Shared networks, templates, images and flavors were preserved.';
       await refresh();
     } else if (value.status === 'REVIEW_REQUIRED') {
       message.textContent += value.phase === 'PERMIT_REVIEW_REQUIRED'
