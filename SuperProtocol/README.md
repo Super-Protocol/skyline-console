@@ -49,6 +49,13 @@ The matching backend must advertise `managed-swarm-publication-v2`; old or
 mixed components are rejected, not adapted. See the kit's
 `docs/OPENSTACK_PUBLICATION.md` for CLI/API and operational details.
 
+With `managed-existing-cluster-publication-v1`, **Publish UI** also supports a
+retained, completed older web-created cluster through an explicit existing
+confirmation. It sends `existing: true`, not new birth metadata. The backend
+validates the original creator/project, immutable inputs and cloud authority,
+then records a separate publication request without restarting guests or
+rewriting their creation. Pending/ambiguous attempts are not resubmitted.
+
 There is one ingress and one active writer, not HA. Disabling new publication
 preserves existing routes. Profile changes never silently rebind existing
 clusters; busy/uncertain operations require review. A stable profile UUID is an

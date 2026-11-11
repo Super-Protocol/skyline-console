@@ -141,12 +141,13 @@
             }catch(error){message.textContent=error.message+' Keep the existing request ID; no automatic replay.';}
             return;
           }
-          if(!confirm('Publish this cluster UI through the approved ingress? No VM will be restarted or recreated.'))return;
+          if(!confirm((cluster.publication_existing?'Publish this existing cluster UI after validating its retained birth and cloud authority?\n':'Publish this cluster UI through the approved ingress?\n')+'No VM will be restarted or recreated. The original creation history is preserved.'))return;
           publish.disabled=true;let accepted=false;
           try{
             const response=await fetch('/spvm-api/v1/publication-settings',{credentials:'same-origin',cache:'no-store'});
             const settings=await response.json();if(!response.ok)throw Error(settings.error||'Publication settings unavailable');
-            const body={cluster:cluster.id,generation:settings.generation,request_id:crypto.randomUUID()};
+            const body={cluster:cluster.id,generation:settings.generation,request_id:crypto.randomUUID(),
+              ...(cluster.publication_existing?{existing:true}:{})};
             sessionStorage.setItem(key,JSON.stringify(body));
             const r=await fetch('/spvm-api/v1/cluster-publications',{method:'POST',credentials:'same-origin',
               headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
