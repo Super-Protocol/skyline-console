@@ -16,7 +16,7 @@
     const version=generation,details=el('details');details.className='editor pool-management';details.append(el('summary','Manage storage pools'));
     if(!host){const text=el('p',error||'Pool management has not been delegated.');text.className='host-notice';details.append(text);return details;}
     const panel=el('div');panel.className='edit-panel';details.append(panel);
-    panel.append(el('p','Add mounted filesystems, choose directories, disable or remove pool registrations. No directory or disk data is deleted, moved or formatted. Changes require an empty host.'));
+    panel.append(el('p','Add mounted filesystems, choose directories, disable or remove pool registrations. Existing files are allowed and disks are created directly in the selected directory. Registration does not format storage or clean up files. A new VM disk may overwrite an old, unregistered file with the same UUID filename. Changes require an empty host.'));
     const eligible=host.filesystems.filter(f=>f.eligible),known=new Map(eligible.map(f=>[f.filesystem_id,f]));
     const detected=el('details');detected.className='detected-filesystems';detected.append(el('summary','Detected filesystems'));
     const list=el('ul');
@@ -92,7 +92,7 @@
         if(p.enabled)active.add(p.filesystem_id);
       }
       const summary=pools.map(p=>`${p.id}: ${p.enabled?'enabled':'disabled'} · ${p.path} · ${p.budget_gib} GiB + ${p.reserve_gib} GiB reserve`).join('\n')||'No registered pools';
-      if(!confirm(`Apply pool configuration to ${host.host}?\n${summary}\nData will not be deleted or moved. A host without an enabled pool is UNCONFIGURED and cannot admit any new VM. The host remains disabled after applying changes.`))return;
+      if(!confirm(`Apply pool configuration to ${host.host}?\n${summary}\nExisting disk files stay in place and are not imported as VMs. New disks use these exact directories and may overwrite old, unregistered same-UUID files. Old reservation metadata in a newly selected directory is backed up before fresh bookkeeping is initialized. A host without an enabled pool is UNCONFIGURED and cannot admit any new VM. The host remains disabled after applying changes.`))return;
       const body={request_id:crypto.randomUUID(),host:host.host,generation:host.generation,pools};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();
       try {const response=await api('',body);await poll(response.request_id);}

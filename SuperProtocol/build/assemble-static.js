@@ -52,6 +52,7 @@ const manifest = {
   capability: 'prebuilt-openstack-images-v1',
   request_origin_policy: 'trusted-loopback-proxy-v1',
   settings_api: 'typed-general-settings-v1',
+  operations_api: 'reviewed-host-operations-v1',
   publication_api: 'managed-swarm-publication-v2',
   existing_publication_api: 'managed-existing-cluster-publication-v1',
   retirement_api: 'managed-cluster-retirement-external-dns-v1',

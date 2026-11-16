@@ -161,6 +161,15 @@ not required. Cancel leaves the draft untouched and submits no request. This
 confirmation does not replace administrator authorization, empty-host checks or
 protected worker validation.
 
+The storage-pool editor permits existing files and explains the overwrite policy
+in its confirmation. State disks are created directly in the selected directory;
+a new allocation can atomically replace an old, unregistered same-UUID file.
+Other files remain, consume physical space and are not imported as VMs. On first
+registration, old reservation metadata is privately backed up before a fresh
+ledger is initialized. Current reservations, active workloads and interrupted
+replacements still block resource changes. A matching `nonempty-state-pools-v1`
+backend/helper/driver kit is required; this UI does not clear failed operations.
+
 Only a trusted feature-branch push or workflow dispatch has package/release
 write permission. Pull requests have no publishing secrets or permissions.
 Component releases include full source SHA, CI run and attempt in their unique
@@ -197,3 +206,17 @@ Python dependencies and registries may still require Internet access. File and
 image SHA256 verification establishes integrity, not a cryptographic signature
 and not attestation of a guest VM. No old bundle or workspace migration is
 provided.
+
+**Host resource budgets → Operations** displays the recorded action, host, stage,
+failure category and original request ID. **Check result** submits a read-only
+verification to the enrolled worker. **Complete after verification** requires
+Yes/No confirmation and a successful unchanged check by the same administrator.
+It never resubmits the original operation or enables scheduling. Original errors
+and journals remain in history with a separate verified resolution. Pending,
+unknown and partially applied changes stay blocked. The matching
+`reviewed-host-operations-v1` console manifest, API, worker and executor are
+required; updating static files alone does not enable recovery. CPU/RAM and pool
+operations plus fully confirmed host Enable/Disable are supported; GPU, global
+settings and publication journals require their specialist review. Request IDs
+survive transport failures, and `NOT_FOUND` permits only explicit dismissal of
+the browser record. No arbitrary log text or credentials are rendered.
