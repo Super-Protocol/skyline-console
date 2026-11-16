@@ -220,3 +220,17 @@ operations plus fully confirmed host Enable/Disable are supported; GPU, global
 settings and publication journals require their specialist review. Request IDs
 survive transport failures, and `NOT_FOUND` permits only explicit dismissal of
 the browser record. No arbitrary log text or credentials are rendered.
+
+
+Operations history uses `paginated-host-operations-v1`: 20 records per page,
+Previous/Next controls and a total count above and below the records. All
+published history remains reachable, with unresolved operations first. The
+coordinator retains a 4096-journal safety bound; it never silently drops errors
+or deletes original journals. The page cache and index are derived data.
+
+Page requests carry a content snapshot. A changed history restarts the read view
+on the latest first page with an explanation. Saved check/completion request IDs
+survive page navigation; returning polls their result without resubmission.
+Refresh explicitly opens the latest first page. Matching console/API/coordinator
+are required; updating static files alone is insufficient. Original typed review
+intents, authorization, Yes/No confirmation and host fencing stay unchanged.

@@ -2,7 +2,7 @@
 (() => {
   const root=document.getElementById('host-operations');
   if(!root)return;
-  let view=0;const timers=new Set();
+  let view=0,currentPage=1,snapshot=null;const timers=new Set();
   const prefix='spvm.hostOperation.';
   function el(tag,text){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;}
   async function api(path='',body){
@@ -10,11 +10,11 @@
       credentials:'same-origin',cache:'no-store',redirect:'error',
       ...(body?{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});
     const result=await response.json();
-    if(!response.ok){const error=new Error(result.error||'Operation review unavailable');error.notAccepted=result.request_accepted===false;throw error;}
+    if(!response.ok){const error=new Error(result.error||'Operation review unavailable');error.notAccepted=result.request_accepted===false;error.historyChanged=result.code==='HOST_OPERATION_HISTORY_CHANGED';throw error;}
     return result;
   }
   function saved(key){try{return JSON.parse(sessionStorage.getItem(key)||'null');}catch(_){return null;}}
-  function row(operation,generation){
+  function row(operation,generation,catalog){
     const panel=el('article');panel.className='host-card';
     const heading=el('h3',`${operation.host||'Cloud settings'} — ${operation.action}`);
     const status=el('p',`${operation.status}${operation.resolution?' · '+operation.resolution:''}`);
@@ -59,7 +59,7 @@
       if(action==='check'){verified=null;sessionStorage.removeItem(checkedKey);}
       sessionStorage.setItem(key,JSON.stringify(request));pending=true;update();
       message.textContent=`Submitting ${action==='check'?'read-only verification':'explicit reviewed completion'}… Review request: ${request.request_id}`;
-      try{await api('',request);await poll(request);}
+      try{await api(`?page=${catalog.page}&snapshot=${encodeURIComponent(catalog.snapshot)}`,request);await poll(request);}
       catch(error){
         if(error.notAccepted){sessionStorage.removeItem(key);pending=false;update();}
         message.textContent=error.message+(error.notAccepted?' Request was not accepted.':` Keep review request ${request.request_id}; do not repeat completion.`);
@@ -69,18 +69,41 @@
     update();const request=saved(key);if(request&&!terminal)poll(request);
     return panel;
   }
-  async function refresh(){
+  function pager(catalog){
+    const navigation=el('nav');navigation.className='edit-actions operation-pagination';navigation.setAttribute('aria-label','Operation history pages');
+    const previous=el('button','Previous'),next=el('button','Next');
+    previous.type=next.type='button';previous.className=next.className='button secondary';
+    previous.disabled=catalog.page<=1;next.disabled=catalog.page>=catalog.total_pages;
+    previous.addEventListener('click',()=>refresh(catalog.page-1));
+    next.addEventListener('click',()=>refresh(catalog.page+1));
+    const label=el('span',`Page ${catalog.page} of ${catalog.total_pages} · ${catalog.total} operations`);
+    navigation.append(previous,label,next);return navigation;
+  }
+  async function refresh(page=currentPage,latest=false,allowReset=true){
     const generation=++view;for(const timer of timers)clearTimeout(timer);timers.clear();
+    if(latest)snapshot=null;
     root.replaceChildren(el('p','Loading operation history…'));
     try{
-      const catalog=await api();if(generation!==view)return;
+      const query=`?page=${page}${snapshot?'&snapshot='+encodeURIComponent(snapshot):''}`;
+      const catalog=await api(query);if(generation!==view)return;
+      if(catalog.schema_version!==2||catalog.capability!=='paginated-host-operations-v1'||catalog.page!==page||!Number.isInteger(catalog.total_pages)
+          ||!Number.isInteger(catalog.total)||catalog.total<0||catalog.total>4096||catalog.page_size!==20
+          ||catalog.total_pages!==Math.max(1,Math.ceil(catalog.total/20))||page>catalog.total_pages
+          ||!Array.isArray(catalog.operations)||catalog.operations.length!==Math.min(20,Math.max(0,catalog.total-(page-1)*20))
+          ||typeof catalog.snapshot!=='string'||!(/^[a-f0-9]{64}$/).test(catalog.snapshot))throw new Error('Matching paginated operation history is required.');
+      currentPage=catalog.page;snapshot=catalog.snapshot;
       const note=el('p',`Worker catalog observed: ${new Date(catalog.observed_at*1000).toISOString()}. Checking is read-only. Completion never retries a failed operation or clears an unknown partial state.`);
-      root.replaceChildren(note,...catalog.operations.map(operation=>row(operation,generation)));
+      root.replaceChildren(note,pager(catalog),...catalog.operations.map(operation=>row(operation,generation,catalog)),pager(catalog));
       if(!catalog.operations.length)root.append(el('p','No recorded host operations in this project. This does not cancel requests still awaiting the worker.'));
-    }catch(error){if(generation===view)root.replaceChildren(el('p',error.message+' Existing request IDs and host fences are retained.'));}
+      if(!allowReset)root.prepend(el('p','History changed. Showing the latest first page; pending review request IDs are retained.'));
+    }catch(error){
+      if(generation!==view)return;
+      if(error.historyChanged&&allowReset){snapshot=null;currentPage=1;return refresh(1,true,false);}
+      root.replaceChildren(el('p',error.message+' Existing request IDs and host fences are retained.'));
+    }
   }
-  window.addEventListener('spvm-hosts-refresh',refresh);
-  document.getElementById('refresh-operations').addEventListener('click',refresh);
+  window.addEventListener('spvm-hosts-refresh',()=>refresh(1,true));
+  document.getElementById('refresh-operations').addEventListener('click',()=>refresh(1,true));
   window.addEventListener('pagehide',()=>{++view;for(const timer of timers)clearTimeout(timer);timers.clear();});
   refresh();
 })();

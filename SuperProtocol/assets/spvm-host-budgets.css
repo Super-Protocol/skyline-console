@@ -91,3 +91,5 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   .pool-inputs { grid-template-columns: 1fr; }
   .badge { font-size: 11px; }
 }
+
+.operation-pagination { align-items: center; margin-bottom: 16px; }
