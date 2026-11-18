@@ -4,7 +4,7 @@
   let view=0;const timers=new Set(),expandedHosts=new Set();
   function el(tag,text) { const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node; }
   const number=value=>Number(value).toLocaleString('en-US',{maximumFractionDigits:2});
-  const memory=value=>value===null?'Not configured':`${number(value/1024)} GiB`;
+  const memory=(value,exact=false)=>value===null?'Not configured':`${Number(value/1024).toLocaleString('en-US',{maximumFractionDigits:exact?10:2})} GiB`;
   const cpuBudget=value=>value===null?'Not configured':`${number(value)} vCPU`;
   function table(headers,rows,className,currentColumn) {
     const scroll=el('div');scroll.className='table-scroll';const grid=el('table');grid.className=className;
@@ -91,9 +91,9 @@
     box.append(lifecycleControls(host.host,lifecycle));
     const content=el('div');content.className='host-content';
     const title=el('h3','CPU & memory');title.className='section-heading';content.append(title);
-    content.append(table(['Resource','Detected hardware','Applied OpenStack limit'],[
+    content.append(table(['Resource','Detected hardware','Assigned to OpenStack'],[
       ['CPU',`${number(host.hardware.logical_cpus)} logical CPUs`,cpuBudget(host.current.vcpus)],
-      ['Memory',memory(host.hardware.memory_mb),memory(host.current.memory_mb)],
+      ['Memory',memory(host.hardware.memory_mb),memory(host.current.memory_mb,true)],
     ],'resource-table',2));
     const note=el('p','First setup: assign CPU/RAM, add an enabled state pool, optionally select GPUs, then Enable this host. Resource changes never enable scheduling.');note.className='table-note';content.append(note);
     const storageTitle=el('h3','State storage');storageTitle.className='section-heading storage-heading';content.append(storageTitle);
@@ -118,8 +118,8 @@
     const panel=el('div');panel.className='edit-panel';
     const fields=el('fieldset'),resources=el('div');resources.className='input-grid';fields.append(resources);
     const cpu=input('CPU budget (vCPU)',host.current.vcpus,resources,'Leave CPU capacity for the host.');
-    const ram=input('Memory budget (MiB)',host.current.memory_mb,resources,`Current: ${memory(host.current.memory_mb)}. 1 GiB = 1024 MiB.`);
-    ram.addEventListener('input',()=>{ram.parentElement.querySelector('small').textContent=`${memory(Number(ram.value))}. 1 GiB = 1024 MiB.`;});
+    const ram=input('Memory budget (GiB)',host.current.memory_mb===null?null:host.current.memory_mb/1024,resources,`Current: ${memory(host.current.memory_mb,true)}. Leave memory capacity for the host.`);
+    ram.min=String(1/1024);ram.step='any';
     const pools=host.current.pools.map(pool=> {
       const panel=el('fieldset');panel.className='pool-editor';panel.append(el('legend',`State pool · ${pool.id}`));
       const physical=host.hardware.pools.find(p=>p.id===pool.id);
@@ -137,11 +137,14 @@
     update();cancel.addEventListener('click',()=>{editor.open=false;});
     button.addEventListener('click',async()=> {
       if(sessionStorage.getItem(key))return;
-      const budget={vcpus:Number(cpu.value),memory_mb:Number(ram.value),
+      const budget={vcpus:Number(cpu.value),memory_mb:Number(ram.value)*1024,
         pools:pools.map(p=>({id:p.id,budget_gib:Number(p.budget.value),reserve_gib:Number(p.reserve.value)}))};
       const resolved=budget;
-      if(!Number.isSafeInteger(resolved.vcpus)||!Number.isSafeInteger(resolved.memory_mb)||resolved.vcpus<1||resolved.memory_mb<1) {
-        message.textContent='Select positive whole CPU/RAM values.';return;
+      if(!Number.isSafeInteger(resolved.vcpus)||resolved.vcpus<1) {
+        message.textContent='Enter a positive whole CPU budget in vCPUs.';return;
+      }
+      if(!Number.isSafeInteger(resolved.memory_mb)||resolved.memory_mb<1) {
+        message.textContent='Enter a positive memory budget in GiB. Fractions must convert exactly to whole MiB (1 GiB = 1024 MiB).';return;
       }
       if(resolved.vcpus>=host.hardware.logical_cpus||resolved.memory_mb>=host.hardware.memory_mb) {
         message.textContent='CPU/RAM budgets must leave a positive reserve for the host.';return;
@@ -154,7 +157,7 @@
         message.textContent='Each state budget and reserve must be positive whole GiB and fit the available filesystem space.';return;
       }
       const storage=resolved.pools.map(p=>`${p.id}: ${p.budget_gib} GiB budget / ${p.reserve_gib} GiB reserve`).join('\n');
-      if(!confirm(`Apply limits to ${host.host}?\n${resolved.vcpus} vCPU / ${resolved.memory_mb} MiB RAM\n${storage}\nOnly an empty host is permitted; the host stays disabled until a separate Enable.`))return;
+      if(!confirm(`Apply limits to ${host.host}?\n${resolved.vcpus} vCPU / ${memory(resolved.memory_mb,true)} RAM\n${storage}\nOnly an empty host is permitted; the host stays disabled until a separate Enable.`))return;
       const body={host:host.host,generation:host.generation,budget,request_id:crypto.randomUUID()};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();message.textContent='Submitting explicit administrator request…';
       try {

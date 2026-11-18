@@ -207,6 +207,14 @@ image SHA256 verification establishes integrity, not a cryptographic signature
 and not attestation of a guest VM. No old bundle or workspace migration is
 provided.
 
+Host resource memory inputs, applied limits and review confirmations use GiB,
+the same unit as state-storage budgets. The UI converts GiB to the existing
+integer `memory_mb` API field using 1024 MiB per GiB. Exact fractional GiB are
+supported when they represent a whole number of MiB. Existing budgets are
+prefilled and displayed without rounding their applied value; changing display
+units does not increase an existing budget or apply changes automatically.
+CLI/API memory values remain in MiB.
+
 Host cards start collapsed with the host name and lifecycle status visible.
 Expand a card by clicking its heading or using Enter/Space while the heading is
 focused. Several cards can stay open. Expansion is retained when refreshing
