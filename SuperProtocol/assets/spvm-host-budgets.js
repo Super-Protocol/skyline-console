@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  let view=0;const timers=new Set();
+  let view=0;const timers=new Set(),expandedHosts=new Set();
   function el(tag,text) { const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node; }
   const number=value=>Number(value).toLocaleString('en-US',{maximumFractionDigits:2});
   const memory=value=>value===null?'Not configured':`${number(value/1024)} GiB`;
@@ -82,8 +82,9 @@
   function card(host,poolCatalog,poolError,gpuCatalog,gpuError,lifecycle) {
     const generation=view,blocked=host.blockers.length>0,key='spvm.hostBudget.'+host.host;
     const saved=sessionStorage.getItem(key);let pending=Boolean(saved);
-    const box=el('article');box.className='host-card';
-    const heading=el('header');heading.className='host-heading';const identity=el('div');
+    const box=el('details');box.className='host-card';box.open=expandedHosts.has(host.host);
+    box.addEventListener('toggle',()=>{if(box.open)expandedHosts.add(host.host);else expandedHosts.delete(host.host);});
+    const heading=el('summary');heading.className='host-heading';const identity=el('div');
     const caption=el('p','COMPUTE HOST');caption.className='eyebrow';identity.append(caption,el('h2',host.host));
     const badge=el('span',lifecycle?.status||'Status unavailable');badge.className='badge '+(lifecycle?.status==='ENABLED'?'ready':'blocked');
     heading.append(identity,badge);box.append(heading);

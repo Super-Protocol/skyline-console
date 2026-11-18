@@ -207,6 +207,14 @@ image SHA256 verification establishes integrity, not a cryptographic signature
 and not attestation of a guest VM. No old bundle or workspace migration is
 provided.
 
+Host cards start collapsed with the host name and lifecycle status visible.
+Expand a card by clicking its heading or using Enter/Space while the heading is
+focused. Several cards can stay open. Expansion is retained when refreshing
+hosts; a full page reload starts collapsed. Operations use the same compact
+layout, showing host/action and recorded status or verified resolution in the
+heading. Their expansion is retained across refresh and history pagination.
+Collapsing a card does not cancel requests, stop polling or submit changes.
+
 **Host resource budgets → Operations** displays the recorded action, host, stage,
 failure category and original request ID. **Check result** submits a read-only
 verification to the enrolled worker. **Complete after verification** requires

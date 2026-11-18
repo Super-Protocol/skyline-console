@@ -2,7 +2,7 @@
 (() => {
   const root=document.getElementById('host-operations');
   if(!root)return;
-  let view=0,currentPage=1,snapshot=null;const timers=new Set();
+  let view=0,currentPage=1,snapshot=null;const timers=new Set(),expandedOperations=new Set();
   const prefix='spvm.hostOperation.';
   function el(tag,text){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;}
   async function api(path='',body){
@@ -15,8 +15,13 @@
   }
   function saved(key){try{return JSON.parse(sessionStorage.getItem(key)||'null');}catch(_){return null;}}
   function row(operation,generation,catalog){
-    const panel=el('article');panel.className='host-card';
-    const heading=el('h3',`${operation.host||'Cloud settings'} — ${operation.action}`);
+    const panel=el('details');panel.className='host-card operation-card';panel.open=expandedOperations.has(operation.request_id);
+    panel.addEventListener('toggle',()=>{if(panel.open)expandedOperations.add(operation.request_id);else expandedOperations.delete(operation.request_id);});
+    const heading=el('summary');heading.className='host-heading';
+    const identity=el('div');identity.append(el('h3',`${operation.host||'Cloud settings'} — ${operation.action}`));
+    const badge=el('span',operation.resolution||operation.status);
+    badge.className='badge '+(operation.resolution||operation.status==='SUCCEEDED'?'ready':'blocked');heading.append(identity,badge);
+    const content=el('div');content.className='host-content';
     const status=el('p',`${operation.status}${operation.resolution?' · '+operation.resolution:''}`);
     const phase=el('p',operation.phase);const id=el('p',`Request: ${operation.request_id}`);
     if(operation.updated_at)phase.append(document.createTextNode(` · Last recorded update: ${new Date(operation.updated_at*1000).toISOString()}`));
@@ -25,7 +30,7 @@
     const check=el('button','Check result'),complete=el('button','Complete after verification');
     check.type=complete.type='button';check.className='button secondary';complete.className='button';
     const actions=el('div');actions.className='edit-actions';actions.append(check,complete);
-    panel.append(heading,status,phase,id,actions,message);
+    content.append(status,phase,id,actions,message);panel.append(heading,content);
     const key=prefix+operation.request_id,checkedKey=key+'.checked';
     let pending=Boolean(saved(key)),verified=saved(checkedKey);
     const terminal=Boolean(operation.resolution)||['SUCCEEDED','REFUSED'].includes(operation.status);

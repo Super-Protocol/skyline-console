@@ -20,8 +20,14 @@ h1 { font-size: 28px; line-height: 1.25; margin: 0 0 10px; letter-spacing: -.025
 .page-status.error { color: #ad3440; }
 #hosts { display: grid; gap: 24px; }
 .host-card { background: white; border: 1px solid #dbe2eb; border-radius: 10px; overflow: hidden; }
-.host-heading { padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e8edf3; }
-.host-heading h2 { font-size: 19px; line-height: 1.35; margin: 0; overflow-wrap: anywhere; }
+.host-heading { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; list-style: none; }
+details.host-card[open] > .host-heading { border-bottom: 1px solid #e8edf3; }
+.host-heading::-webkit-details-marker { display: none; }
+.host-heading::before { content: ''; flex-shrink: 0; width: 8px; height: 8px; border-right: 2px solid #64748b; border-bottom: 2px solid #64748b; transform: rotate(-45deg); }
+details.host-card[open] > .host-heading::before { transform: rotate(45deg); }
+.host-heading:hover { background: #f8fafc; }
+.host-heading > div { flex: 1; min-width: 0; }
+.host-heading h2, .host-heading h3 { font-size: 19px; line-height: 1.35; margin: 0; overflow-wrap: anywhere; }
 .host-heading .eyebrow { margin-bottom: 4px; font-size: 10px; }
 .badge { flex-shrink: 0; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; }
 .badge.ready { background: #ebf7ef; color: #267149; }
@@ -83,7 +89,10 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 [hidden] { display: none !important; }
 @media (max-width: 700px) {
   main { padding: 0 14px; margin-top: 20px; }
-  .page-header, .host-heading { align-items: flex-start; flex-direction: column; }
+  .page-header { align-items: flex-start; flex-direction: column; }
+  .host-heading { gap: 12px; flex-wrap: wrap; }
+  .host-heading > div { min-width: 130px; }
+  .host-heading .badge { max-width: 100%; margin-left: auto; overflow-wrap: anywhere; }
   h1 { font-size: 25px; }
   .host-heading, .host-content { padding: 18px; }
   .edit-panel { padding: 16px; }
@@ -93,3 +102,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 
 .operation-pagination { align-items: center; margin-bottom: 16px; }
+
+.operation-card { margin-bottom: 12px; }
+.operation-card .host-heading h3 { font-size: 15px; }
+.operation-card .badge { overflow-wrap: anywhere; min-width: 0; }
