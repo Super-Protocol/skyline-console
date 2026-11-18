@@ -44,15 +44,15 @@ export const hypervisorColumns = [
     stringify: (value, record) => computeCapacityText(record, true),
   },
   {
-    title: t('Instances'),
-    dataIndex: 'running_vms',
-  },
-  {
     title: t('GPU allocation'),
     dataIndex: 'gpu_capacity',
     width: 300,
     render: (value, record) => <GpuCapacity record={record} />,
     stringify: (value, record) => gpuCapacityText(record),
+  },
+  {
+    title: t('Instances'),
+    dataIndex: 'running_vms',
   },
 ];
 
