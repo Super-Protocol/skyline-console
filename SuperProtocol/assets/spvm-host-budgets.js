@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  let view=0;const timers=new Set(),expandedHosts=new Set();
+  let view=0,lifecycleTimer,lifecycleAbort;const timers=new Set(),expandedHosts=new Set(),lifecycleViews=new Map();
   function el(tag,text) { const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node; }
   const number=value=>Number(value).toLocaleString('en-US',{maximumFractionDigits:2});
   const memory=(value,exact=false)=>value===null?'Not configured':`${Number(value/1024).toLocaleString('en-US',{maximumFractionDigits:exact?10:2})} GiB`;
@@ -16,8 +16,8 @@
     }
     grid.append(body);scroll.append(grid);return scroll;
   }
-  async function api(path,body,resource='host-budgets') {
-    const response=await fetch('/spvm-api/v1/'+resource+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',redirect:'error',
+  async function api(path,body,resource='host-budgets',signal) {
+    const response=await fetch('/spvm-api/v1/'+resource+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',redirect:'error',signal,
       ...(body?{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});
     const result=await response.json();
     if(!response.ok) {
@@ -43,19 +43,31 @@
       } else {const timer=setTimeout(()=>{timers.delete(timer);poll(id,message,button,key,generation);},5000);timers.add(timer);}
     } catch(error) { if(generation===view)message.textContent=error.message+'. Refresh to inspect the same request; do not create a replacement request.'; }
   }
-  function lifecycleControls(host,state) {
+  function lifecycleControls(host,state,badge) {
     const panel=el('section');panel.className='edit-panel';
-    if(!state){panel.append(el('p','Host lifecycle status is unavailable. Refresh; activation is disabled.'));return panel;}
-    const readiness=state.readiness,mode=readiness.mode==='untrusted'?'Non-CC · debug only':readiness.mode==='tdx'?'TDX':'SEV-SNP';
-    panel.append(el('p',`${mode} · Nova ${state.nova_status} · Technical readiness: ${state.technical_ready?'ready':readiness.reason||'not ready'}`));
-    if(state.blockers.length){const text=el('p',state.blockers.join(', ').replaceAll('_',' '));text.className='host-notice';panel.append(text);}
+    const summary=el('p'),notice=el('p');notice.className='host-notice';panel.append(summary,notice);
     const key='spvm.hostLifecycle.'+host,saved=sessionStorage.getItem(key),generation=view;
+    let locked=Boolean(saved);
     const enable=el('button','Enable host'),disable=el('button','Disable new launches'),message=el('p');
     for(const button of [enable,disable]){button.type='button';button.className='button secondary';}
-    enable.disabled=Boolean(saved)||state.status==='ENABLED'||state.status==='UNCONFIGURED'||state.blockers.length>0;
-    disable.disabled=Boolean(saved)||!state.resources.enabled&&state.nova_status!=='enabled';
     message.className='request-status';message.setAttribute('role','status');
     const actions=el('div');actions.className='edit-actions';actions.append(enable,disable);panel.append(actions,message);
+    function update(next){
+      state=next;
+      const stale=state?.blockers.includes('LIFECYCLE_OBSERVATION_STALE')||
+        (Number.isFinite(state?.observed_at)&&Date.now()/1000-state.observed_at>180);
+      const unknown=!state||stale||state.status==='UNKNOWN';
+      badge.textContent=unknown?'UNKNOWN':state.status;
+      badge.className='badge '+(!unknown&&state.status==='ENABLED'?'ready':'blocked');
+      const readiness=state?.readiness,mode=readiness?.mode==='untrusted'?'Non-CC · debug only':readiness?.mode==='tdx'?'TDX':readiness?.mode==='sev-snp'?'SEV-SNP':'Launch mode unknown';
+      summary.textContent=`${mode} · Nova ${state?.nova_status||'unknown'} · Technical readiness: ${unknown?'unknown':state.technical_ready?'ready':readiness?.reason||'not ready'}`;
+      const blockers=(state?.blockers||[]).filter(b=>b!=='LIFECYCLE_OBSERVATION_STALE');
+      notice.textContent=[stale?'Host status is out of date. Waiting for a fresh worker observation; this does not confirm a host failure.':unknown?'Host status is unavailable. Enable is blocked until a fresh observation is available.':'',...blockers.map(b=>b.replaceAll('_',' '))].filter(Boolean).join(' ');
+      notice.hidden=!notice.textContent;
+      enable.disabled=locked||unknown||state.status==='ENABLED'||state.status==='UNCONFIGURED'||state.blockers.length>0;
+      disable.disabled=locked||!state||!state.resources.enabled&&state.nova_status!=='enabled';
+    }
+    lifecycleViews.set(host,update);update(state);
     async function pollLifecycle(id){
       if(generation!==view)return;
       try{
@@ -71,7 +83,7 @@
       if(sessionStorage.getItem(key))return;
       if(!confirm(enabled?`Enable new VM launches on ${host}?`:`Disable new launches on ${host}? Running VMs and already accepted operations will continue.`))return;
       const body={request_id:crypto.randomUUID(),host,generation:state.generation,enabled};
-      sessionStorage.setItem(key,JSON.stringify(body));enable.disabled=disable.disabled=true;
+      sessionStorage.setItem(key,JSON.stringify(body));locked=true;enable.disabled=disable.disabled=true;
       try{const result=await api('',body,'host-lifecycle');await pollLifecycle(result.request_id);}
       catch(error){if(error.notAccepted)sessionStorage.removeItem(key);message.textContent=error.message+'. Refresh before any further operation.';}
     }
@@ -88,7 +100,7 @@
     const caption=el('p','COMPUTE HOST');caption.className='eyebrow';identity.append(caption,el('h2',host.host));
     const badge=el('span',lifecycle?.status||'Status unavailable');badge.className='badge '+(lifecycle?.status==='ENABLED'?'ready':'blocked');
     heading.append(identity,badge);box.append(heading);
-    box.append(lifecycleControls(host.host,lifecycle));
+    box.append(lifecycleControls(host.host,lifecycle,badge));
     const content=el('div');content.className='host-content';
     const title=el('h3','CPU & memory');title.className='section-heading';content.append(title);
     content.append(table(['Resource','Detected hardware','Assigned to OpenStack'],[
@@ -167,20 +179,49 @@
     if(saved) {try {poll(JSON.parse(saved).request_id,message,button,key,generation);}catch(_){message.textContent='Stored request needs manual review.';}}
     return box;
   }
+  function stopLifecycleRefresh(){
+    clearTimeout(lifecycleTimer);lifecycleTimer=undefined;
+    if(lifecycleAbort)lifecycleAbort.abort();
+  }
+  function scheduleLifecycleRefresh(){
+    clearTimeout(lifecycleTimer);
+    if(!document.hidden)lifecycleTimer=setTimeout(refreshLifecycle,30000);
+  }
+  async function refreshLifecycle(){
+    clearTimeout(lifecycleTimer);
+    if(document.hidden||lifecycleAbort)return;
+    const generation=view,controller=new AbortController();lifecycleAbort=controller;
+    const timeout=setTimeout(()=>controller.abort(),15000);
+    try{
+      const result=await api('',undefined,'host-lifecycle',controller.signal);
+      if(generation!==view)return;
+      for(const [host,update] of lifecycleViews)update(result.hosts.find(item=>item.host===host));
+    }catch(_){
+      if(generation===view)for(const update of lifecycleViews.values())update(undefined);
+    }finally{
+      clearTimeout(timeout);
+      if(lifecycleAbort===controller)lifecycleAbort=undefined;
+      if(generation===view)scheduleLifecycleRefresh();
+    }
+  }
   async function refresh() {
-    ++view;for(const timer of timers)clearTimeout(timer);timers.clear();
+    ++view;stopLifecycleRefresh();lifecycleViews.clear();for(const timer of timers)clearTimeout(timer);timers.clear();
+    const generation=view;
     $('refresh').disabled=true;
     try {
       const result=await api('');const lifecycle=await api('',undefined,'host-lifecycle');let pools=[],poolError,gpus=[],gpuError;
       if(window.SpvmPools){try{pools=await window.SpvmPools.catalog();}catch(e){poolError=e.message;}}
       if(window.SpvmGpus){try{gpus=await window.SpvmGpus.catalog();}catch(e){gpuError=e.message;}}
+      if(generation!==view)return;
       $('hosts').replaceChildren(...result.hosts.map(h=>card(h,pools.find(p=>p.host===h.host),poolError,gpus.find(g=>g.host===h.host),gpuError,lifecycle.hosts.find(l=>l.host===h.host))));$('status').className='page-status';
       const available=result.hosts.filter(h=>!h.blockers.length).length;
       $('status').textContent=result.hosts.length?`${result.hosts.length} compute hosts · ${available} available for changes · ${result.hosts.length-available} blocked`:'No hosts have been delegated for resource management.';
     }
-    catch(error){$('hosts').replaceChildren();$('status').className='page-status error';$('status').textContent=error.message;}
-    finally {$('refresh').disabled=false;}
+    catch(error){if(generation!==view)return;lifecycleViews.clear();$('hosts').replaceChildren();$('status').className='page-status error';$('status').textContent=error.message;}
+    finally {if(generation===view){$('refresh').disabled=false;scheduleLifecycleRefresh();}}
   }
+  window.addEventListener('pagehide',()=>{++view;stopLifecycleRefresh();for(const timer of timers)clearTimeout(timer);timers.clear();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopLifecycleRefresh();else refreshLifecycle();});
   window.addEventListener('spvm-hosts-refresh',refresh);
   $('refresh').addEventListener('click',refresh);refresh();
 })();

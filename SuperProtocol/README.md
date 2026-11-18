@@ -256,3 +256,8 @@ survive page navigation; returning polls their result without resubmission.
 Refresh explicitly opens the latest first page. Matching console/API/coordinator
 are required; updating static files alone is insufficient. Original typed review
 intents, authorization, Yes/No confirmation and host fencing stay unchanged.
+
+Host resource pages refresh lifecycle status independently every 30 seconds.
+This does not replace resource forms, discard drafts or submit requests. Stale
+observations show unknown technical readiness and block Enable; they do not
+prove a host failure. The controller worker must supply a fresh observation.
