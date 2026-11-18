@@ -59,10 +59,6 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 680px; margin-top: 20px; }
 .field { display: flex; flex-direction: column; gap: 6px; font-weight: 550; }
 .field small { font-size: 12px; color: #718096; font-weight: 400; }
-.pool-editor { border-top: 1px solid #e0e7ef; margin-top: 20px; padding-top: 18px; }
-.pool-editor legend { font-weight: 600; float: left; width: 100%; margin-bottom: 2px; }
-.pool-editor .input-grid { clear: both; }
-.pool-editor > p { color: #718096; font-size: 12px; margin: 2px 0 0; clear: both; }
 .edit-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 20px; margin-top: 20px; border-top: 1px solid #e0e7ef; }
 .request-status { overflow-wrap: anywhere; color: #475569; margin: 16px 0 0; }
 .request-status:empty { display: none; }

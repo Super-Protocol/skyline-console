@@ -207,6 +207,12 @@ image SHA256 verification establishes integrity, not a cryptographic signature
 and not attestation of a guest VM. No old bundle or workspace migration is
 provided.
 
+**Change CPU & memory limits** edits vCPU and RAM only. Disk budgets, free-space
+reserves and pool registration are edited exclusively in **Manage storage pools**.
+CPU/RAM requests carry the current disk limits unchanged for the existing typed
+API. The host generation still fences concurrent pool changes: refresh and
+review a new request if the saved configuration changed.
+
 Host resource memory inputs, applied limits and review confirmations use GiB,
 the same unit as state-storage budgets. The UI converts GiB to the existing
 integer `memory_mb` API field using 1024 MiB per GiB. Exact fractional GiB are

@@ -114,22 +114,14 @@
       for(const reason of host.blockers)list.append(el('li',reason.replaceAll('_',' ')));
       details.append(list);notice.append(details);content.append(notice);
     }
-    const editor=el('details');editor.className='editor';editor.open=pending||host.current.vcpus===null;editor.append(el('summary','Change resource limits'));
+    const editor=el('details');editor.className='editor';editor.open=pending||host.current.vcpus===null;editor.append(el('summary','Change CPU & memory limits'));
     const panel=el('div');panel.className='edit-panel';
     const fields=el('fieldset'),resources=el('div');resources.className='input-grid';fields.append(resources);
     const cpu=input('CPU budget (vCPU)',host.current.vcpus,resources,'Leave CPU capacity for the host.');
     const ram=input('Memory budget (GiB)',host.current.memory_mb===null?null:host.current.memory_mb/1024,resources,`Current: ${memory(host.current.memory_mb,true)}. Leave memory capacity for the host.`);
     ram.min=String(1/1024);ram.step='any';
-    const pools=host.current.pools.map(pool=> {
-      const panel=el('fieldset');panel.className='pool-editor';panel.append(el('legend',`State pool · ${pool.id}`));
-      const physical=host.hardware.pools.find(p=>p.id===pool.id);
-      panel.append(el('p',`${number(physical.available_gib)} GiB physically available. Budget + reserve must fit this space.`));
-      const grid=el('div');grid.className='input-grid';panel.append(grid);
-      const budget=input('State budget (GiB)',pool.budget_gib,grid,'Logical capacity available to OpenStack.');
-      const reserve=input('Host reserve (GiB)',pool.reserve_gib,grid,'Space kept outside the OpenStack budget.');
-      fields.append(panel);return {id:pool.id,budget,reserve};
-    });
-    panel.append(fields);
+    const storageNote=el('p','Manage disk budgets and reserves in Manage storage pools.');storageNote.className='table-note';
+    panel.append(storageNote,fields);
     const button=el('button','Review and apply'),cancel=el('button','Cancel'),message=el('p');button.type=cancel.type='button';
     button.className='button';cancel.className='button secondary';message.className='request-status';message.setAttribute('role','status');
     const actions=el('div');actions.className='edit-actions';actions.append(button,cancel);panel.append(actions,message);
@@ -138,7 +130,7 @@
     button.addEventListener('click',async()=> {
       if(sessionStorage.getItem(key))return;
       const budget={vcpus:Number(cpu.value),memory_mb:Number(ram.value)*1024,
-        pools:pools.map(p=>({id:p.id,budget_gib:Number(p.budget.value),reserve_gib:Number(p.reserve.value)}))};
+        pools:host.current.pools.map(p=>({id:p.id,budget_gib:p.budget_gib,reserve_gib:p.reserve_gib}))};
       const resolved=budget;
       if(!Number.isSafeInteger(resolved.vcpus)||resolved.vcpus<1) {
         message.textContent='Enter a positive whole CPU budget in vCPUs.';return;
@@ -154,10 +146,9 @@
         return !physical||!Number.isSafeInteger(pool.budget_gib)||!Number.isSafeInteger(pool.reserve_gib)||
           pool.budget_gib<1||pool.reserve_gib<1||pool.budget_gib+pool.reserve_gib>physical.available_gib;
       })) {
-        message.textContent='Each state budget and reserve must be positive whole GiB and fit the available filesystem space.';return;
+        message.textContent='Review disk budgets and reserves in Manage storage pools, then refresh hosts before changing CPU/RAM.';return;
       }
-      const storage=resolved.pools.map(p=>`${p.id}: ${p.budget_gib} GiB budget / ${p.reserve_gib} GiB reserve`).join('\n');
-      if(!confirm(`Apply limits to ${host.host}?\n${resolved.vcpus} vCPU / ${memory(resolved.memory_mb,true)} RAM\n${storage}\nOnly an empty host is permitted; the host stays disabled until a separate Enable.`))return;
+      if(!confirm(`Apply CPU and memory limits to ${host.host}?\n${resolved.vcpus} vCPU / ${memory(resolved.memory_mb,true)} RAM\nStorage pool budgets and reserves remain unchanged.\nOnly an empty host is permitted; the host stays disabled until a separate Enable.`))return;
       const body={host:host.host,generation:host.generation,budget,request_id:crypto.randomUUID()};
       sessionStorage.setItem(key,JSON.stringify(body));pending=true;update();message.textContent='Submitting explicit administrator request…';
       try {
