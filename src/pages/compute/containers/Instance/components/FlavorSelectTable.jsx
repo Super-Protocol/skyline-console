@@ -72,7 +72,7 @@ export class FlavorSelectTable extends Component {
       (it) => it.key === 'flavor_families'
     );
     if (!item) {
-      return [all, custom];
+      return [all, { architecture: 'superprotocol' }, custom];
     }
     let values = [];
     try {
@@ -92,7 +92,7 @@ export class FlavorSelectTable extends Component {
       // eslint-disable-next-line no-console
       console.log(e);
     }
-    return [all, ...values, custom];
+    return [all, ...values, { architecture: 'superprotocol' }, custom];
   }
 
   get categories() {
@@ -139,7 +139,7 @@ export class FlavorSelectTable extends Component {
         if (arch === 'all') {
           return true;
         }
-        if (arch === 'custom') {
+        if (arch === 'custom' || arch === 'superprotocol') {
           return it.architecture === arch;
         }
         return it.architecture === arch && it.category === category;

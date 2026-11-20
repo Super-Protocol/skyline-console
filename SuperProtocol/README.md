@@ -1,0 +1,263 @@
+# Super Protocol Skyline console
+
+This directory owns the Super Protocol console extensions, standalone SPVM
+pages, container build inputs and release verification. The Nova driver,
+authenticated web API and privileged workers live in `spvm-openstack`.
+
+The fork is based on upstream `stable/2026.2`. Work is developed on
+`feature/sync-with-swarm-cloud`; publishing does not merge it into `sp-main`.
+
+Existing public SPVM page URLs are retained. Native Skyline changes are made
+in React source, not by modifying compiled JavaScript or inspecting the DOM.
+Presentation links do not grant API permissions.
+
+Every standalone SPVM page displays the authenticated OpenStack project. New
+installations prepare the dedicated `SWARM` project for workload operations.
+Password and TOTP login prefer its protected UUID if it is already an enabled
+project accessible to that user. This is an initial login preference, not a
+membership grant or a name lookup. Users without SWARM access keep an accessible
+project. Manual selection through Skyline's normal project selector is retained;
+page refresh and standalone SPVM pages never force a project switch. The context label uses the authenticated
+`/spvm-api/v1/project` response, not a browser-provided project name.
+
+**General settings** is linked from Hypervisors, host resources and releases.
+It controls debug-image registration and new launch policy for the enrolled
+compute fleet through `/spvm-api/v1/settings`. The matching backend and executors
+must support `typed-general-settings-v1`; no JSON-file editing, SSH operation or
+service restart is performed by the page. It preserves request IDs and uncertain
+outcomes, requires confirmation, and never retries automatically. Existing
+running guests, CC mode, resources and scheduling state are not changed.
+
+**General settings → Swarm UI publication** separately configures the allowed
+domain suffixes, public IPv4 endpoint and installed ingress. Enter up to 32
+distinct zones separated by `;`, or an explicit standalone `*` to allow any
+domain. Wildcard cannot be mixed with zones; patterns such as `*.example.org`
+are not accepted. The unrestricted choice has an explicit confirmation warning
+and is never the default. It relaxes only the zone allowlist, not project or
+provider-template authority, DNS/approved ingress matching, or trusted HTTPS.
+The API stores a `domain_suffixes` array, not delimiter-separated text. It uses typed
+`/spvm-api/v1/publication-settings` requests, current generations, retained
+request IDs and a Yes/No confirmation. The initial state is `NOT_CONFIGURED`.
+The displayed local bind address is distinct from a public VIP/NAT/L4-LB
+address. No DNS keys or guest certificates are requested by this page.
+Swarm retains DNS/certificate management through provider-config.
+
+**Swarm Clusters → Delete cluster** permanently removes that cluster's VMs and
+ingress routes, not Stop/Pause. Exact-name confirmation explicitly warns that DNS
+records remain for separate administrator cleanup. The API requires
+`dns_cleanup=external`; a matching `managed-cluster-retirement-external-dns-v1`
+backend/worker is required. No DNS keys are requested. Request IDs survive reload;
+uncertain outcomes never trigger automatic replay. Remove stale DNS records
+before reusing domains or public addresses. Shared networks, templates, images,
+flavors and other clusters remain unchanged.
+
+Managed creation defaults to `public`; explicitly choose `none` to skip
+publication. The form blocks public creation before configuration, not on DNS
+records that do not yet exist. Progress distinguishes instance readiness, DNS
+waiting, route application, HTTPS verification and `UI_READY`; VM ACTIVE alone
+does not expose a successful public UI link. New-format clusters created with
+`none` offer **Publish UI**, retaining the accepted request ID without replay.
+The matching backend must advertise `managed-swarm-publication-v2`; old or
+mixed components are rejected, not adapted. See the kit's
+`docs/OPENSTACK_PUBLICATION.md` for CLI/API and operational details.
+
+With `managed-existing-cluster-publication-v1`, **Publish UI** also supports a
+retained, completed older web-created cluster through an explicit existing
+confirmation. It sends `existing: true`, not new birth metadata. The backend
+validates the original creator/project, immutable inputs and cloud authority,
+then records a separate publication request without restarting guests or
+rewriting their creation. Pending/ambiguous attempts are not resubmitted.
+
+There is one ingress and one active writer, not HA. Disabling new publication
+preserves existing routes. Profile changes never silently rebind existing
+clusters; busy/uncertain operations require review. A stable profile UUID is an
+architectural boundary for future HA, not distributed fencing or failover.
+
+Native table extension links use an Ant Design Space so link-style buttons have
+the same visible separation as the adjacent native toolbar controls.
+
+## Compute capacity display
+
+Hypervisor lists, details and the administrator overview distinguish Placement
+allocations from the workload budget, host reserve and Nova-reported host total.
+Allocated capacity comes from root-provider usages, not Nova's legacy used
+counters, which can include host reserves even when no VMs exist. CPU and RAM
+budget is `floor((inventory.total - inventory.reserved) * allocation_ratio)`.
+Reserves are outside that budget and never inflate the allocation indicator.
+VCPU and PCPU pools are displayed separately; the overview sums CPU slots,
+not physical-core utilization. Ratios other than one are shown explicitly.
+
+These are scheduling allocations, not live CPU load or physically consumed RAM.
+Reservations and migrations can retain allocations even with no running guests.
+Host totals are not multiplied by allocation ratios. RAM is displayed in GiB
+using 1024 MiB per GiB. A fully reserved inventory has zero workload budget;
+an absent inventory is shown as not advertised, not fabricated free capacity.
+Placement failures or inconsistent observations are errors, never successful
+zero-use readings. Refresh after an inventory change. These read-only UI
+calculations do not change inventories, budgets, scheduling or running guests.
+
+**GPU allocation** shows whole physical cards detected, assigned to OpenStack,
+in use/reserved and free, plus model/device display labels. It uses one batched
+authenticated `/spvm-api/v1/hypervisor-gpus` read, matched by compute UUID rather
+than a display name. Counts include allocations from all projects but disclose
+no other project's instance IDs. vGPU remains a separate resource; NVSwitch
+auxiliary PCI functions are not counted as physical cards. The matched worker
+validates Nova PCI claims against stable Placement observations. Stale, denied,
+missing or inconsistent observations show unknown use/free counts, not zero;
+they do not hide the hypervisor table. Free capacity is not launch admission
+and does not override host Enable/Disable. This is not GPU utilization telemetry.
+The console and backend must support `hypervisor-gpu-summary-v1` and the login
+contract `swarm-default-login-v1`; mixed release components are rejected.
+
+## Build and publication
+
+Keep operator/build instructions independent of internal test runs. Do not add
+test reports, stand addresses, dated checkpoints, run transcripts or test counts
+to repository documentation. Exact component identities belong in source locks
+and generated release descriptors, not duplicated installation examples.
+
+`SuperProtocol/build/component-lock.json` pins the exact Node 22/Yarn Classic
+versions, Kolla revision, and reviewed Linux/amd64 base manifests and
+their distinct config IDs. A manifest digest is not a Docker image/config ID.
+The first trusted workflow dispatch mirrors the two reviewed bases to new GHCR
+packages without changing their manifests, configs or ordered layers. The
+new packages must be public; an authenticated push is not evidence of public
+access. Publication is blocked until all image layers can be downloaded
+anonymously. Existing packages' visibility is never changed by this workflow.
+
+Subsequent console builds use the GHCR mirror by digest, not an upstream tag.
+The multi-stage Dockerfile uses `yarn install --frozen-lockfile`, compiles the
+React source once, copies the standalone pages, and generates deterministic
+gzip siblings and a complete SHA256 file manifest. Content-hashed webpack
+names and SHA256 query strings on standalone HTML references prevent serving
+old cached code. The final stage removes **all** inherited console static
+files before copying the new tree. Kolla entrypoint, command, user, environment,
+configuration and healthcheck defaults are inherited and checked by the release
+validator. The nginx template is owned source, derived from the pinned Kolla
+revision; it retains the existing `/spvm-api/` loopback proxy on port 18776.
+
+The matched web backend requires `trusted-loopback-proxy-v1`. For SPVM API
+requests, nginx overwrites `X-SPVM-UI-Origin` with `https://$http_host`; never
+preserve a client-provided value or drop the original Host port. HTTPS is the
+server-owned public UI contract, also when the enrolled HAProxy terminates TLS
+before nginx. The internal HTTP hop is not the public scheme; client-supplied
+`Forwarded`/`X-Forwarded-Proto` headers do not select it. Plain HTTP browser
+writes remain forbidden. The backend
+accepts only HTTPS same-origin writes through controller loopback, followed by
+normal Skyline session and administrator checks. SSH tunnel local ports need
+not be enumerated. Do not expose the backend or bypass the proxy; additional
+proxy/TLS termination paths require a separate trust review. Missing/null or
+mismatched origins fail closed, without enabling CORS or wildcard hosts.
+
+Resource editors retain uncertain request IDs without automatic retries. Known
+pre-dispatch rejections remove only the unaccepted local intent. `NOT_FOUND`
+stops polling and offers explicit dismissal of the browser record after review;
+it does not cancel/repeat a server action or assert that another cloud never ran
+that ID. Registered requests continue to wait for the protected worker result.
+
+CPU/RAM, storage-pool and GPU configuration changes use a standard confirmation
+dialog showing the target host and applicable warnings; typing the hostname is
+not required. Cancel leaves the draft untouched and submits no request. This
+confirmation does not replace administrator authorization, empty-host checks or
+protected worker validation.
+
+The storage-pool editor permits existing files and explains the overwrite policy
+in its confirmation. State disks are created directly in the selected directory;
+a new allocation can atomically replace an old, unregistered same-UUID file.
+Other files remain, consume physical space and are not imported as VMs. On first
+registration, old reservation metadata is privately backed up before a fresh
+ledger is initialized. Current reservations, active workloads and interrupted
+replacements still block resource changes. A matching `nonempty-state-pools-v1`
+backend/helper/driver kit is required; this UI does not clear failed operations.
+
+Only a trusted feature-branch push or workflow dispatch has package/release
+write permission. Pull requests have no publishing secrets or permissions.
+Component releases include full source SHA, CI run and attempt in their unique
+identity. These suffixes do not permit reusing `component_version`: increase it
+explicitly in `SuperProtocol/build/component-lock.json` before another console
+publication (for example `9.0.0-sp1` -> `9.0.0-sp2`). Do not change upstream's
+`package.json` version for this downstream publication version.
+
+Before building or mirroring, `publication_guard.py` checks existing Git tags,
+GitHub releases/drafts and all paginated GHCR image tags. It exclusively reserves
+`publication/console/<component_version>` as an annotated tag binding the source
+commit, CI run and attempt. Producers verify that reservation again before
+publication. A concurrent run, new SHA, Re-run or new attempt cannot reuse it.
+Failed/partial publication consumes the reserved version too: inspect/fix the
+cause, increase the explicit version, and start a new run. Reservations are not
+completed releases or signatures; do not delete them to retry. The guard never
+updates/removes tags, overwrites artifacts or treats network/auth errors as
+confirmed absence. The reviewed public packages must already be accessible;
+new-name/visibility provisioning is an administrative prerequisite. Existing
+base mirrors are reused by digest; base tags are not rewritten.
+
+This is a trusted-CI fence, not protection against arbitrary package-admin pushes
+or deletion: preserve reservations and restrict those administrative operations.
+The coordinated kit can reuse an unchanged published console by digest; console
+version changes require a new reviewed source/release/checksum lock downstream.
+Releases and image tags are never replaced. There is no automatic
+GHCR retention cleanup: administrators must preserve every digest referenced by
+an installed kit. `console-component.json`, `console-manifest.json`,
+`nginx.conf.j2` and `SHA256SUMS` are input to the downstream coordinated kit,
+not an OpenStack installer on their own.
+
+This is not a complete offline kit: other Kolla images, distribution packages,
+Python dependencies and registries may still require Internet access. File and
+image SHA256 verification establishes integrity, not a cryptographic signature
+and not attestation of a guest VM. No old bundle or workspace migration is
+provided.
+
+**Change CPU & memory limits** edits vCPU and RAM only. Disk budgets, free-space
+reserves and pool registration are edited exclusively in **Manage storage pools**.
+CPU/RAM requests carry the current disk limits unchanged for the existing typed
+API. The host generation still fences concurrent pool changes: refresh and
+review a new request if the saved configuration changed.
+
+Host resource memory inputs, applied limits and review confirmations use GiB,
+the same unit as state-storage budgets. The UI converts GiB to the existing
+integer `memory_mb` API field using 1024 MiB per GiB. Exact fractional GiB are
+supported when they represent a whole number of MiB. Existing budgets are
+prefilled and displayed without rounding their applied value; changing display
+units does not increase an existing budget or apply changes automatically.
+CLI/API memory values remain in MiB.
+
+Host cards start collapsed with the host name and lifecycle status visible.
+Expand a card by clicking its heading or using Enter/Space while the heading is
+focused. Several cards can stay open. Expansion is retained when refreshing
+hosts; a full page reload starts collapsed. Operations use the same compact
+layout, showing host/action and recorded status or verified resolution in the
+heading. Their expansion is retained across refresh and history pagination.
+Collapsing a card does not cancel requests, stop polling or submit changes.
+
+**Host resource budgets → Operations** displays the recorded action, host, stage,
+failure category and original request ID. **Check result** submits a read-only
+verification to the enrolled worker. **Complete after verification** requires
+Yes/No confirmation and a successful unchanged check by the same administrator.
+It never resubmits the original operation or enables scheduling. Original errors
+and journals remain in history with a separate verified resolution. Pending,
+unknown and partially applied changes stay blocked. The matching
+`reviewed-host-operations-v1` console manifest, API, worker and executor are
+required; updating static files alone does not enable recovery. CPU/RAM and pool
+operations plus fully confirmed host Enable/Disable are supported; GPU, global
+settings and publication journals require their specialist review. Request IDs
+survive transport failures, and `NOT_FOUND` permits only explicit dismissal of
+the browser record. No arbitrary log text or credentials are rendered.
+
+
+Operations history uses `paginated-host-operations-v1`: 20 records per page,
+Previous/Next controls and a total count above and below the records. All
+published history remains reachable, with unresolved operations first. The
+coordinator retains a 4096-journal safety bound; it never silently drops errors
+or deletes original journals. The page cache and index are derived data.
+
+Page requests carry a content snapshot. A changed history restarts the read view
+on the latest first page with an explanation. Saved check/completion request IDs
+survive page navigation; returning polls their result without resubmission.
+Refresh explicitly opens the latest first page. Matching console/API/coordinator
+are required; updating static files alone is insufficient. Original typed review
+intents, authorization, Yes/No confirmation and host fencing stay unchanged.
+
+Host resource pages refresh lifecycle status independently every 30 seconds.
+This does not replace resource forms, discard drafts or submit requests. Stale
+observations show unknown technical readiness and block Enable; they do not
+prove a host failure. The controller worker must supply a fresh observation.

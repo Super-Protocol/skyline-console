@@ -1,0 +1,33 @@
+main { max-width: 1100px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.toolbar label { margin: 0; }
+input { flex: 1; min-width: 180px; padding: 10px; border: 1px solid #bfc5cc; border-radius: 5px; font: inherit; }
+article { border: 1px solid #dce2e9; border-radius: 8px; margin: 24px 0; padding: 20px; overflow-x: auto; }
+.heading { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+h2 { margin: 0; }
+.badge { padding: 3px 10px; border-radius: 5px; background: #eef4ff; font-size: 14px; }
+.badge[data-status="ACTIVE"] { background: #e5f5eb; color: #176334; }
+.badge[data-status="DEGRADED"] { background: #ffeded; color: #8d1d1d; }
+.uuid { color: #666; font-size: 13px; overflow-wrap: anywhere; }
+.node-warning { color: #805600; background: #fff7df; padding: 10px; border-radius: 4px; }
+.node-warning:empty { display: none; }
+.actions { display: flex; gap: 12px 20px; margin: 16px 0; flex-wrap: wrap; align-items: center; }
+.actions > a { overflow-wrap: anywhere; }
+.actions .cluster-delete { margin-left: auto; padding: 7px 14px; background: white; color: #b42318; border: 1px solid #e9b5af; font-size: 14px; line-height: 20px; white-space: nowrap; }
+.actions .cluster-delete:hover:not(:disabled) { background: #fff1f0; border-color: #b42318; }
+.actions .cluster-delete:focus-visible { outline: 2px solid #b42318; outline-offset: 3px; }
+@media (max-width: 600px) { .actions .cluster-delete { margin-left: 0; } }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; }
+th, td { padding: 10px; border-bottom: 1px solid #edf0f4; vertical-align: top; overflow-wrap: anywhere; }
+th:nth-child(1) { width: 32%; }
+th:nth-child(2) { width: 8%; }
+th:nth-child(3) { width: 18%; }
+th:nth-child(4) { width: 14%; }
+th:nth-child(5) { width: 28%; }
+@media (max-width: 700px) { table { min-width: 680px; } }
+td details { min-width: 0; max-width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 14px; padding: 10px; border: 1px solid transparent; border-radius: 6px; }
+td details[open] { border-color: #dce2e9; background: #f8fafc; }
+td summary { cursor: pointer; }
+td details p { margin: 8px 0; }
+td details code { display: block; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+td details a { overflow-wrap: anywhere; word-break: break-word; }

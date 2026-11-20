@@ -37,6 +37,7 @@ export const imageVisibility = {
 };
 
 export const imageOS = {
+  'super-spvm': 'Super',
   centos: t('CentOS'),
   ubuntu: t('Ubuntu'),
   fedora: t('Fedora'),
@@ -163,6 +164,7 @@ export const getImageSystemTabs = () => {
     'oraclelinux',
     'arch',
     'freebsd',
+    'super-spvm',
     'others',
   ];
   return valueList.map((value) => {

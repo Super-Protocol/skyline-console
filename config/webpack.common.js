@@ -16,11 +16,10 @@ const webpack = require('webpack');
 const { normalize, resolve } = require('path');
 // const path = require("path");
 // const CleanWebpackPlugin = require('clean-webpack-plugin');
-const moment = require('moment');
 const { getGlobalVariables, getCustomStyleVariables } = require('./utils');
 
 const root = (path) => resolve(__dirname, `../${path}`);
-const version = moment().unix();
+const version = process.env.SOURCE_DATE_EPOCH || 'development';
 
 // (jamesdenton) Remove once libs no longer hardcode the hashing algorithm
 const crypto = require("crypto");
