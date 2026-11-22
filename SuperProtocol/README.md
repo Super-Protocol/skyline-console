@@ -261,3 +261,17 @@ Host resource pages refresh lifecycle status independently every 30 seconds.
 This does not replace resource forms, discard drafts or submit requests. Stale
 observations show unknown technical readiness and block Enable; they do not
 prove a host failure. The controller worker must supply a fresh observation.
+
+### Internal Knot gateway discovery
+
+The `knot-gateway-discovery-v1` console displays a separate, read-only discovery
+observation on each published Swarm cluster: the last successful verification,
+number of accepted OpenResty gateways, and a fixed waiting or review reason.
+Historical `UI_READY` remains publication evidence, not ongoing availability.
+A missing/stale observation never hides a retained public URL or authorizes a
+new publication. The backend validates project scope before exposing reports.
+
+Public DNS still resolves to the external ingress. Internal Knot DNS is queried
+by the OpenStack publisher; guest DNS is not exposed publicly. The publisher
+accepts only gateway addresses bound to verified cluster members. This console
+requires a coordinated kit with the matching discovery capability.
