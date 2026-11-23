@@ -126,6 +126,21 @@
       const actions = element('div', undefined, 'actions');
       const publication=cluster.publication;
       actions.append(element('span','Public UI: '+(publication?.phase||publication?.status||'NOT_REQUESTED')));
+      if(cluster.discovery && publication && publication.phase !== 'NOT_REQUESTED'){
+        const d=cluster.discovery;
+        const reasons={KNOT_UNAVAILABLE:'Waiting for internal Knot DNS',
+          KNOT_ANSWERS_DIVERGE:'Waiting for Knot answers to agree',
+          GATEWAYS_UNAVAILABLE:'No discovered OpenResty is reachable',
+          PKI_UNAVAILABLE:'Original cluster CA endpoint is unavailable',
+          INGRESS_APPLY_REVIEW_REQUIRED:'Ingress application requires operator review',
+          DISCOVERY_UNAVAILABLE:'Discovery observation is unavailable or stale'};
+        const count=Number.isInteger(d.gateway_count)?d.gateway_count:0;
+        let text=d.status==='READY'?`Knot discovery: ${count} gateway${count===1?'':'s'}`:
+          reasons[d.reason]||'Knot discovery is waiting for a verified update';
+        if(d.last_success_at)text+=` · Last verified: ${new Date(d.last_success_at*1000).toLocaleString()}`;
+        actions.append(element('span',text,d.status==='READY'?'':'node-warning'));
+      }
+
       if(cluster.can_publish){
         const publish=element('button','Publish UI','button');publish.type='button';
         const message=element('p',undefined,'publication-status');

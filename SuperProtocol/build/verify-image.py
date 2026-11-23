@@ -59,7 +59,8 @@ def verify(image, base, output):
             if (manifest.get('settings_api') != 'typed-general-settings-v1'
                     or not {'spvm-settings.html','spvm-settings.js'} <= set(expected)):
                 raise ValueError('Matched General settings page/API contract required')
-            if (manifest.get('publication_api') != 'managed-swarm-publication-v2'
+            if (manifest.get('gateway_discovery_api') != 'knot-gateway-discovery-v1'
+                    or manifest.get('publication_api') != 'managed-swarm-publication-v2'
                     or manifest.get('existing_publication_api') != 'managed-existing-cluster-publication-v1'
                     or manifest.get('retirement_api') != 'managed-cluster-retirement-external-dns-v1'
                     or not {'spvm-publication-settings.js','swarm-create.html','swarm-create.js','swarm-clusters.js'} <= set(expected)):

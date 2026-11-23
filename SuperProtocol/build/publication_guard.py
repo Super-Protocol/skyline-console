@@ -131,9 +131,11 @@ def identity(component):
     value = {'schema_version':1, 'component':component, 'version':version,
              'commit':os.environ.get('GITHUB_SHA', ''), 'run':os.environ.get('GITHUB_RUN_ID', ''),
              'attempt':os.environ.get('GITHUB_RUN_ATTEMPT', '')}
-    allowed = {'refs/heads/feature/sync-with-swarm-cloud'}
+    allowed = {'refs/heads/feature/knot'}
     if component == 'openstack':
         allowed.add('refs/heads/main')
+    else:
+        allowed.add('refs/heads/sp-main')
     if (os.environ.get('GITHUB_REPOSITORY') != repo
             or os.environ.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch')
             or os.environ.get('GITHUB_REF') not in allowed

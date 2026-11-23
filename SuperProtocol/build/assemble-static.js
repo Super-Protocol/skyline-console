@@ -55,6 +55,7 @@ const manifest = {
   operations_api: 'reviewed-host-operations-v1',
   operations_catalog_api: 'paginated-host-operations-v1',
   publication_api: 'managed-swarm-publication-v2',
+  gateway_discovery_api: 'knot-gateway-discovery-v1',
   existing_publication_api: 'managed-existing-cluster-publication-v1',
   retirement_api: 'managed-cluster-retirement-external-dns-v1',
   hypervisor_gpu_api: 'hypervisor-gpu-summary-v1',
