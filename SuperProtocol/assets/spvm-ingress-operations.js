@@ -32,6 +32,15 @@
     $('ingress-' + action + '-host').replaceChildren(...items.map(item => new Option(label(item), item.host)));
   }
 
+  function selectAddHost() {
+    const host = catalog?.eligible.find(item => item.host === $('ingress-add-host').value);
+    const bind = $('ingress-bind-ip');
+    const publicIP = $('ingress-public-ip');
+    bind.readOnly = Boolean(host?.nat);
+    bind.value = host?.nat?.bind_address || '';
+    publicIP.value = host?.nat?.public_address || '';
+  }
+
   async function poll(id, own) {
     try {
       const value = await api('/' + encodeURIComponent(id));
@@ -63,6 +72,7 @@
       catalog = value;
       options('add', value.eligible, item => item.hostname === item.host ? item.host : `${item.hostname} (${item.host})`);
       options('remove', value.replicas, item => `${item.host} · ${item.public_address}`);
+      selectAddHost();
       $('ingress-dns-withdrawn').checked = false;
       status.textContent = value.blocker || (value.eligible.length || value.replicas.length ? '' : 'No eligible compute hosts or enrolled ingress replicas.');
       availability();
@@ -78,8 +88,9 @@
     const host = $('ingress-' + action + '-host').value;
     const selected = catalog.replicas.find(item => item.host === host);
     if (action === 'remove' && (!selected || !$('ingress-dns-withdrawn').checked)) return;
-    const data = action === 'add' ? {bind_address: $('ingress-bind-ip').value.trim(),
-      public_address: $('ingress-public-ip').value.trim()} : {dns_withdrawn: true};
+    const candidate = catalog.eligible.find(item => item.host === host);
+    const data = action === 'add' ? {public_address: $('ingress-public-ip').value.trim(),
+      ...(!candidate?.nat ? {bind_address: $('ingress-bind-ip').value.trim()} : {})} : {dns_withdrawn: true};
     const confirmed = action === 'add' ? `Add ${host} as an ingress replica on public IP ${data.public_address}?`
       : `Stop the ingress replica on ${host} (${selected.public_address})?`;
     if (!confirm(confirmed)) return;
@@ -103,6 +114,7 @@
   }
 
   for (const action of ['add', 'remove']) $('ingress-' + action + '-form').addEventListener('submit', event => submit(event, action));
+  $('ingress-add-host').addEventListener('change', selectAddHost);
   $('ingress-remove-host').addEventListener('change', () => { $('ingress-dns-withdrawn').checked = false; });
   refreshButton.addEventListener('click', refresh);
   window.addEventListener('pagehide', () => { ++version; clearTimeout(timer); });

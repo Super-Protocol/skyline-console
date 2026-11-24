@@ -57,6 +57,7 @@ const manifest = {
   publication_api: 'managed-swarm-publication-v2',
   ingress_replication_api: 'managed-swarm-ingress-replicas-v1',
   ingress_management_api: 'managed-ingress-replica-operations-v1',
+  ingress_nat_api: 'managed-nat-ingress-v1',
   gateway_discovery_api: 'knot-gateway-discovery-v1',
   existing_publication_api: 'managed-existing-cluster-publication-v1',
   retirement_api: 'managed-cluster-retirement-external-dns-v1',
