@@ -34,8 +34,23 @@
       const value=catalog.configuration;
       $('publication-enabled').checked=value?.enabled||false;
       $('publication-domain').value=(value?.domain_suffixes||[]).join('; ');
+      const replicas=catalog.replicas||[];
+      $('publication-replicas').hidden=replicas.length===0;
+      $('publication-replica-list').replaceChildren(...replicas.map(replica=>{
+        const item=document.createElement('li');
+        const parts=[replica.host, replica.status, `Local ${replica.bind_address}`,
+          `Public ${replica.public_address}`, replica.generation===null?'No confirmed generation':`Generation ${replica.generation}`];
+        if(replica.reason==='DELIVERY_REQUIRES_REVIEW')parts.push('Review the private ingress journal');
+        if(replica.reason==='GENERATION_UNCONFIRMED_OR_INGRESS_UNREACHABLE')parts.push('Routes unconfirmed or ingress unreachable');
+        item.textContent=parts.join(' · ');
+        return item;
+      }));
       $('publication-addresses').value=(value?.public_addresses||[]).join(', ');
-      if(!value){const a=catalog.ingress.bind_address;if(!/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a))$('publication-addresses').value=a;}
+      if(!value){
+        const address=catalog.ingress.bind_address;
+        const primary=/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(address)?[]:[address];
+        $('publication-addresses').value=[...primary,...replicas.map(replica=>replica.public_address)].join(', ');
+      }
       const option=document.createElement('option');option.value=catalog.ingress.id;option.textContent=catalog.ingress.host;
       $('publication-ingress').replaceChildren(option);
       $('publication-bind').textContent=`Local bind: ${catalog.ingress.bind_address}; logical profile: ${catalog.profile_id}`;

@@ -131,7 +131,7 @@ def identity(component):
     value = {'schema_version':1, 'component':component, 'version':version,
              'commit':os.environ.get('GITHUB_SHA', ''), 'run':os.environ.get('GITHUB_RUN_ID', ''),
              'attempt':os.environ.get('GITHUB_RUN_ATTEMPT', '')}
-    allowed = {'refs/heads/feature/knot'}
+    allowed = {'refs/heads/feature/knot', 'refs/heads/feature/multi-ingress'}
     if component == 'openstack':
         allowed.add('refs/heads/main')
     else:

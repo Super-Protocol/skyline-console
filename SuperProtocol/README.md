@@ -68,8 +68,14 @@ validates the original creator/project, immutable inputs and cloud authority,
 then records a separate publication request without restarting guests or
 rewriting their creation. Pending/ambiguous attempts are not resubmitted.
 
-There is one ingress and one active writer, not HA. Disabling new publication
-preserves existing routes. Profile changes never silently rebind existing
+**General settings → Swarm UI publication → Manage ingress replicas** adds or
+removes replicas through the typed `/spvm-api/v1/ingress-replicas` API. Choose
+an enrolled compute and its addresses, then confirm. The matching worker and
+host executor must support `managed-ingress-replica-operations-v1`. Keep the
+request ID until verification succeeds. The page displays replica status and
+the applied route generation. Configure DNS separately, and confirm withdrawal
+before requesting removal. One controller publisher remains authoritative.
+Disabling new publication preserves existing routes. Profile changes never silently rebind existing
 clusters; busy/uncertain operations require review. A stable profile UUID is an
 architectural boundary for future HA, not distributed fencing or failover.
 

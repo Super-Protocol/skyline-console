@@ -8,6 +8,7 @@
   <script src="/spvm-resource-requests.js" defer></script>
   <script src="/spvm-settings.js" defer></script>
   <script src="/spvm-publication-settings.js" defer></script>
+  <script src="/spvm-ingress-operations.js" defer></script>
 </head><body><main>
   <nav><a href="/compute/hypervisors-admin">← Hypervisors</a> · <a href="/spvm-host-budgets.html">Host resources</a> · <a href="/swarm-releases.html">SPVM releases</a></nav>
   <h1>General settings</h1>
@@ -31,7 +32,7 @@
   <section class="host-card" id="publication-settings">
     <h2>Swarm UI publication</h2>
     <p>Configure once before creating public Swarm clusters. Swarm retains DNS credentials and manages DNS records and certificates.
-      This service only publishes HTTP/TLS-SNI routes and verifies public HTTPS. One ingress and one writer are supported; this is not HA.</p>
+      OpenStack applies HTTP and TLS-SNI routes to the managed ingress hosts. Configure public DNS separately.</p>
     <form id="publication-form"><fieldset id="publication-fields" disabled>
       <label class="check-field"><input id="publication-enabled" type="checkbox"> Allow new public UI publications</label>
       <label class="field">Allowed domain suffixes<input id="publication-domain" required maxlength="8192" aria-describedby="publication-domain-help" placeholder="swarm.example.org; example.net — or *"></label>
@@ -40,12 +41,39 @@
       <label class="field">Public ingress IPv4 addresses<input id="publication-addresses" required placeholder="Comma-separated addresses of ingress, VIP or external L4 load balancer"></label>
       <label class="field">Managed ingress<select id="publication-ingress" required></select></label>
       <p id="publication-bind"></p>
-      <p>Public addresses are independent of the local bind address. Configure an external VIP/L4 load balancer separately;
-        preserve HTTP Host and TLS SNI. Disabling new publication does not remove existing routes.</p>
+      <section id="publication-replicas" hidden>
+        <h3>Ingress replicas</h3>
+        <ul id="publication-replica-list"></ul>
+      </section>
+      <p>Publish the approved IPv4 addresses through your DNS provider. Each endpoint preserves HTTP Host and TLS SNI.
+        Disabling new publication keeps existing routes.</p>
       <div class="edit-actions"><button class="button" type="submit">Review and apply publication settings</button></div>
     </fieldset></form>
     <p id="publication-status" role="status" aria-live="polite">Loading publication settings…</p>
     <button id="publication-refresh" class="button secondary" type="button">Refresh publication settings</button>
+    <section aria-labelledby="ingress-management-title">
+      <h3 id="ingress-management-title">Manage ingress replicas</h3>
+      <details id="ingress-add-panel" class="edit-panel" hidden>
+        <summary>Add ingress replica</summary>
+        <form id="ingress-add-form"><fieldset id="ingress-add-fields" disabled>
+          <label class="field">Compute host<select id="ingress-add-host" required></select></label>
+          <label class="field">Local bind IPv4<input id="ingress-bind-ip" maxlength="15" required></label>
+          <label class="field">Public IPv4<input id="ingress-public-ip" maxlength="15" required></label>
+          <p>Ports 80 and 443 must be reachable on the public IP. Add the IP to DNS after verification succeeds.</p>
+          <button class="button" type="submit">Review and add replica</button>
+        </fieldset></form>
+      </details>
+      <details id="ingress-remove-panel" class="edit-panel" hidden>
+        <summary>Remove ingress replica</summary>
+        <form id="ingress-remove-form"><fieldset id="ingress-remove-fields" disabled>
+          <label class="field">Ingress replica<select id="ingress-remove-host" required></select></label>
+          <label class="check-field"><input id="ingress-dns-withdrawn" type="checkbox" required> I removed this IP from public DNS and allowed cached answers to expire</label>
+          <button class="button" type="submit">Review and remove replica</button>
+        </fieldset></form>
+      </details>
+      <p id="ingress-operation-status" role="status" aria-live="polite">Loading ingress management…</p>
+      <button id="ingress-operation-refresh" class="button secondary" type="button">Refresh ingress replicas</button>
+    </section>
   </section>
   <button id="refresh" class="button secondary" type="button">Refresh debug settings</button>
 </main></body></html>
