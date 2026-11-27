@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 // Login preference only: Keystone membership and token scope remain authoritative.
+const unavailableProjectInformation = Symbol();
+
 const identifier = (value) =>
   typeof value === 'string' &&
   /^(?:[a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/.test(value);
 
 export function initialWorkloadProject(profile, information) {
+  if (
+    information === unavailableProjectInformation &&
+    identifier(profile?.project?.id)
+  ) {
+    // The native console can use the project from its authenticated profile.
+    return null;
+  }
   const projectId = information?.workload_project_id;
   if (!identifier(projectId) || information?.id !== profile?.project?.id) {
     throw new Error(
@@ -33,6 +42,9 @@ export async function workloadProjectInformation() {
     cache: 'no-store',
     redirect: 'error',
   });
+  if ([502, 503, 504].includes(response.status)) {
+    return unavailableProjectInformation;
+  }
   if (!response.ok) {
     throw new Error(
       'Unable to verify the default workload project. Try again later.'
