@@ -136,6 +136,8 @@ def identity(component):
         allowed.add('refs/heads/main')
     else:
         allowed.add('refs/heads/sp-main')
+        if os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch':
+            allowed.add('refs/heads/feature/openstack-control-plane-ha')
     if (os.environ.get('GITHUB_REPOSITORY') != repo
             or os.environ.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch')
             or os.environ.get('GITHUB_REF') not in allowed

@@ -32,7 +32,7 @@ jobs:
           git diff --check
 
   publish:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'Super-Protocol/skyline-console' && (github.ref == 'refs/heads/feature/knot' || github.ref == 'refs/heads/feature/multi-ingress' || github.ref == 'refs/heads/sp-main')
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'Super-Protocol/skyline-console' && (github.ref == 'refs/heads/feature/knot' || github.ref == 'refs/heads/feature/multi-ingress' || github.ref == 'refs/heads/sp-main' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/openstack-control-plane-ha'))
     needs: check
     runs-on: ubuntu-24.04
     timeout-minutes: 45

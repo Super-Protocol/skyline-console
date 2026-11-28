@@ -20,6 +20,11 @@ project. Manual selection through Skyline's normal project selector is retained;
 page refresh and standalone SPVM pages never force a project switch. The context label uses the authenticated
 `/spvm-api/v1/project` response, not a browser-provided project name.
 
+During an OpenStack HA failover, a gateway error from the SPVM project lookup
+leaves the native Skyline session in the authenticated Keystone project.
+SPVM pages still require their dedicated operator API. Invalid responses and
+authorization errors continue to fail the login preference check.
+
 **General settings** is linked from Hypervisors, host resources and releases.
 It controls debug-image registration and new launch policy for the enrolled
 compute fleet through `/spvm-api/v1/settings`. The matching backend and executors
